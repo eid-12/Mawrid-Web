@@ -1,0 +1,368 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* Mawrid Brand Colors */
+  --brand-sky-50: #F9FCFE;
+  --brand-sky-100: #F1F9FC;
+  --brand-sky-200: #E2F2F9;
+  --brand-sky-300: #D1EBF5;
+  --brand-sky-400: #BAE1F0;
+  --brand-sky-500: #8CCDE6;
+  --brand-sky-600: #77AEC4;
+  --brand-sky-700: #6290A1;
+  --brand-sky-800: #4D717F;
+  --brand-sky-900: #38525C;
+  
+  --brand-indigo-50: #F9FAFD;
+  --brand-indigo-100: #F0F2FB;
+  --brand-indigo-200: #E0E4F7;
+  --brand-indigo-300: #CDD4F2;
+  --brand-indigo-400: #B5BEEB;
+  --brand-indigo-500: #8393DE;
+  --brand-indigo-600: #6F7DBD;
+  --brand-indigo-700: #5C679B;
+  --brand-indigo-800: #48517A;
+  --brand-indigo-900: #343B59;
+  
+  --neutral-50: #F7F8F9;
+  --neutral-100: #ECEEF1;
+  --neutral-200: #D8DCE2;
+  --neutral-300: #C1C7D1;
+  --neutral-400: #A2ACB9;
+  --neutral-500: #64748B;
+  --neutral-600: #556376;
+  --neutral-700: #465161;
+  --neutral-800: #37404C;
+  --neutral-900: #282E38;
+  
+  /* Light Mode - App Background & Surfaces */
+  --app-background: #F5F9FF;
+  --card-bg: #FFFFFF;
+  --border-color: #E2E8F0;
+  --hover-bg: #F5F9FF;
+  
+  /* Light Mode - Text Colors */
+  --text-heading: #0F172A;
+  --text-body: #334155;
+  --text-muted: #64748B;
+  
+  /* Legacy Compatibility */
+  --background: var(--app-background);
+  --foreground: var(--text-body);
+  --card: var(--card-bg);
+  --card-foreground: var(--text-body);
+  --popover: #FFFFFF;
+  --popover-foreground: var(--text-body);
+  --primary: var(--brand-indigo-500);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--neutral-100);
+  --secondary-foreground: var(--text-body);
+  --muted: var(--neutral-100);
+  --muted-foreground: var(--neutral-500);
+  --accent: var(--brand-sky-100);
+  --accent-foreground: var(--text-body);
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: var(--border-color);
+  --input: transparent;
+  --input-background: #FFFFFF;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: var(--brand-indigo-300);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 1rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: var(--text-body);
+  --sidebar-primary: var(--brand-indigo-500);
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: var(--brand-sky-50);
+  --sidebar-accent-foreground: var(--text-body);
+  --sidebar-border: var(--border-color);
+  --sidebar-ring: var(--brand-indigo-300);
+}
+
+.dark {
+  /* Dark Mode - Backgrounds */
+  --app-background: #0b1220;
+  --card-bg: #111a2e;
+  --border-color: #334155;
+  --hover-bg: #1e293b;
+  
+  /* Dark Mode - Text Colors */
+  --text-heading: #f8fafc;
+  --text-body: #e2e8f0;
+  --text-muted: #94a3b8;
+  
+  /* Dark Mode - Legacy Compatibility */
+  --background: var(--app-background);
+  --foreground: var(--text-body);
+  --card: var(--card-bg);
+  --card-foreground: var(--text-body);
+  --popover: #111a2e;
+  --popover-foreground: var(--text-body);
+  --primary: #93a5f3;
+  --primary-foreground: #0b1220;
+  --secondary: #1f2937;
+  --secondary-foreground: var(--text-body);
+  --muted: #1f2937;
+  --muted-foreground: #94a3b8;
+  --accent: #18233a;
+  --accent-foreground: var(--text-body);
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: var(--border-color);
+  --input: transparent;
+  --input-background: #0f172a;
+  --switch-background: #334155;
+  --ring: #93a5f3;
+  --chart-1: oklch(0.7 0.222 41.116);
+  --chart-2: oklch(0.65 0.118 184.704);
+  --chart-3: oklch(0.6 0.07 227.392);
+  --chart-4: oklch(0.75 0.189 84.429);
+  --chart-5: oklch(0.72 0.188 70.08);
+  --sidebar: #0f172a;
+  --sidebar-foreground: var(--text-body);
+  --sidebar-primary: #93a5f3;
+  --sidebar-primary-foreground: #0b1220;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: var(--text-body);
+  --sidebar-border: var(--border-color);
+  --sidebar-ring: #93a5f3;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  /* Smooth transitions for theme changes */
+  * {
+    transition-property: background-color, border-color, color;
+    transition-timing-function: ease;
+    transition-duration: 0.2s;
+  }
+
+  /**
+  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
+  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+  */
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}
+
+/* Global interactive cursors */
+button:not(:disabled),
+a[href],
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Dark mode compatibility for legacy hard-coded utility colors (no light mode impact) */
+.dark input,
+.dark textarea,
+.dark select {
+  color: var(--text-body);
+  border-color: var(--border-color);
+  background-color: var(--input-background);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.dark .bg-white {
+  background-color: var(--card-bg) !important;
+}
+
+.dark .text-\[\#0F172A\] {
+  color: var(--text-heading) !important;
+}
+
+.dark .text-\[\#334155\] {
+  color: var(--text-body) !important;
+}
+
+.dark .text-\[\#64748B\] {
+  color: var(--text-muted) !important;
+}
+
+.dark .border-\[\#E2E8F0\] {
+  border-color: var(--border-color) !important;
+}
+
+.dark .border-\[\#CBD5E1\] {
+  border-color: #475569 !important;
+}
+
+.dark .border-\[\#E8EFFE\],
+.dark .border-\[\#E0E4F7\] {
+  border-color: #334155 !important;
+}
+
+.dark .bg-\[\#F5F9FF\] {
+  background-color: #0f172a !important;
+}
+
+.dark .bg-\[\#F9FCFE\],
+.dark .bg-\[\#F9FAFD\] {
+  background-color: #111a2e !important;
+}
+
+.dark .bg-\[\#F8FAFF\],
+.dark .bg-\[\#EEF2FF\] {
+  background-color: #17233a !important;
+}
+
+.dark .bg-\[\#F1F5F9\] {
+  background-color: #1e293b !important;
+}
+
+.dark .hover\:bg-\[\#F0F4FF\]:hover {
+  background-color: #1e293b !important;
+}
+
+.dark .hover\:bg-\[\#F5F9FF\]:hover {
+  background-color: #1e293b !important;
+}
+
+.dark .active\:bg-\[\#E2F2F9\]:active,
+.dark .active\:bg-\[\#E0E4F7\]:active {
+  background-color: #1e293b !important;
+}
+
+.dark .hover\:bg-red-50:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+.dark .text-\[\#94A3B8\],
+.dark .text-\[\#CBD5E1\] {
+  color: #94a3b8 !important;
+}
+
+.dark .text-\[\#8393DE\],
+.dark .text-\[\#87ABE7\] {
+  color: #a5b4fc !important;
+}
+
+/* Permanent dark-mode date picker icon fix (SVG injection) */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent !important;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>') !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  cursor: pointer !important;
+  filter: none !important;
+  opacity: 1 !important;
+  width: 20px;
+  height: 20px;
+}
+
+.dark input[type="date"] {
+  color-scheme: dark !important;
+  background-color: #0f172a !important;
+  color: white !important;
+}
