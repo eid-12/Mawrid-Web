@@ -15,9 +15,27 @@ export function getAccessToken() {
   return accessToken;
 }
 
-const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ?? "";
+const viteEnv = ((import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {});
+const baseUrl = (viteEnv.VITE_API_BASE_URL as string | undefined)?.trim() ?? "";
 if (!baseUrl) {
   throw new Error("Missing VITE_API_BASE_URL in frontend environment.");
+}
+
+function normalizeApiPath(path: string): string {
+  const trimmed = path.trim();
+  if (!trimmed) return "/api";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+function buildApiUrl(path: string): string {
+  const normalizedPath = normalizeApiPath(path);
+  if (baseUrl.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    return `${baseUrl}${normalizedPath.slice(4)}`;
+  }
+  if (baseUrl.endsWith("/") && normalizedPath.startsWith("/")) {
+    return `${baseUrl.slice(0, -1)}${normalizedPath}`;
+  }
+  return `${baseUrl}${normalizedPath}`;
 }
 
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
@@ -25,7 +43,7 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   headers.set("Content-Type", headers.get("Content-Type") ?? "application/json");
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
-  const res = await fetch(`${baseUrl}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     ...init,
     headers,
     credentials: "include",
@@ -60,7 +78,7 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
 
 async function tryRefresh(): Promise<boolean> {
   try {
-    const res = await fetch(`${baseUrl}/api/auth/refresh`, {
+    const res = await fetch(buildApiUrl("/api/auth/refresh"), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

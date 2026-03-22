@@ -10,10 +10,10 @@ RUN chmod -R +x node_modules/.bin
 
 RUN npm run build
 
-# المرحلة الثانية: التشغيل على بورت 3000
-FROM node:20-alpine
+# المرحلة الثانية: التشغيل عبر Nginx على بورت 3000
+FROM nginx:alpine
 WORKDIR /app
-RUN npm install -g serve
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 3000
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["nginx", "-g", "daemon off;"]
