@@ -15,7 +15,10 @@ export function getAccessToken() {
   return accessToken;
 }
 
-const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://localhost:8080";
+const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim() ?? "";
+if (!baseUrl) {
+  throw new Error("Missing VITE_API_BASE_URL in frontend environment.");
+}
 
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers);
