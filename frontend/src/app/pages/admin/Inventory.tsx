@@ -603,7 +603,7 @@ export default function Inventory() {
 
       <Card padding="none">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[980px]">
             <thead className="bg-background border-b dark:border-b-white/10 border-border">
               <tr>
                 <th className="text-left px-6 py-4 text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>Equipment</th>
@@ -733,7 +733,7 @@ export default function Inventory() {
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
           onClick={closeAddFormModal}
         >
-          <Card className="max-w-2xl w-full" onClick={(e) => e.stopPropagation()}>
+          <Card className="max-w-2xl w-[90vw] sm:w-full" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-2xl font-semibold mb-6" style={{ color: 'var(--text-heading)' }}>Add New Equipment</h2>
             <form className="space-y-4" onSubmit={handleAddEquipment} noValidate>
               <div className="rounded-2xl border border-border bg-card p-4">
@@ -843,7 +843,7 @@ export default function Inventory() {
 
       {editItemId && editItem && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <Card className="max-w-2xl w-full">
+          <Card className="max-w-2xl w-[90vw] sm:w-full">
             <h2 className="text-2xl font-semibold mb-6" style={{ color: 'var(--text-heading)' }}>Edit Equipment</h2>
             <form className="space-y-4" onSubmit={(e) => handleEditSave(e, editItem.id)} noValidate>
               <div className="grid grid-cols-2 gap-4">
@@ -891,7 +891,7 @@ export default function Inventory() {
 
       {selectedEquipment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <Card className="max-w-5xl w-full">
+          <Card className="max-w-5xl w-[90vw] sm:w-full">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-semibold" style={{ color: 'var(--text-heading)' }}>
@@ -911,7 +911,7 @@ export default function Inventory() {
               </div>
             </div>
             <div className="overflow-x-auto border border-border rounded-2xl">
-              <table className="w-full">
+              <table className="w-full min-w-[720px]">
                 <thead className="bg-background border-b dark:border-b-white/10 border-border">
                   <tr>
                     <th className="text-left px-4 py-3 text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>Serial Number</th>
@@ -980,7 +980,7 @@ export default function Inventory() {
 
       {selectedEquipment && showAddUnitForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-[60]">
-          <Card className="max-w-lg w-full">
+          <Card className="max-w-lg w-[90vw] sm:w-full">
             <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-heading)' }}>
               Add Unit - {selectedEquipment.name}
             </h3>
@@ -1009,7 +1009,7 @@ export default function Inventory() {
 
       {selectedEquipment && selectedUnit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-[60]">
-          <Card className="max-w-xl w-full">
+          <Card className="max-w-xl w-[90vw] sm:w-full">
             <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-heading)' }}>
               Edit Unit Details
             </h3>

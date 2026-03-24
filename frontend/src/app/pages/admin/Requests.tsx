@@ -454,7 +454,7 @@ export default function Requests() {
 
       {showRejectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <Card className="max-w-md w-full">
+          <Card className="max-w-md w-[90vw] sm:w-full">
             <h2 className="text-2xl font-semibold text-foreground mb-2">Reject Request</h2>
             <p className="text-sm text-muted-foreground mb-6">Please provide a reason for rejecting this request.</p>
             <div className="space-y-4">
@@ -479,7 +479,7 @@ export default function Requests() {
 
       {viewRequest && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <Card className="max-w-2xl w-full">
+          <Card className="max-w-2xl w-[90vw] sm:w-full">
             <div className="flex items-start justify-between mb-4">
               <h2 className="text-2xl font-semibold text-foreground">Request Details</h2>
               <Button variant="ghost" size="sm" icon={X} onClick={() => setViewRequest(null)}>Close</Button>

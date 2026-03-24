@@ -73,9 +73,9 @@ export default function UserLayout() {
   );
   
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background">
       <Sidebar title="User Portal" links={links} onLogout={handleLogout} footer={userInfo} />
-      <main className="flex-1 p-4 md:p-6 lg:p-8 lg:ml-0 w-full">
+      <main className="flex-1 w-full p-3 sm:p-4 md:p-6 lg:p-8 pt-20 md:pt-6 lg:ml-0">
         {tenantStatus === 'INACTIVE' && (
           <div className="mb-4 p-3 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 text-sm">
             Notice: This college is currently inactive. You can view existing data, but new transactions and management actions are disabled.

@@ -41,10 +41,31 @@ type AuthState = {
 };
 
 const Ctx = createContext<AuthState | undefined>(undefined);
+const AUTH_USER_STORAGE_KEY = "mawrid_auth_user";
+
+function loadStoredUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(AUTH_USER_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    return null;
+  }
+}
+
+function persistUser(user: AuthUser | null) {
+  if (typeof window === "undefined") return;
+  if (!user) {
+    window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+    return;
+  }
+  window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(() => loadStoredUser());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   function clearError() {
@@ -85,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailVerified: data.emailVerified,
       };
       setUser(loggedInUser);
+      persistUser(loggedInUser);
       return loggedInUser;
     } catch (e) {
       const err = e as ApiError;
@@ -97,11 +119,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function hydrate() {
-    // If we don't have an access token yet, try refresh silently, then /me
     setLoading(true);
     setError(null);
     try {
-      await api.post<{ accessToken: string }>("/api/auth/refresh", {});
       const me = await api.get<{
         userId: number;
         tenantId: number | null;
@@ -113,9 +133,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailVerified: boolean;
       }>("/api/auth/me");
       setUser(me);
+      persistUser(me);
     } catch {
       setUser(null);
       setAccessToken(null);
+      persistUser(null);
       setError(null);
     } finally {
       setLoading(false);
@@ -135,6 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailVerified: boolean;
       }>("/api/auth/me");
       setUser(me);
+      persistUser(me);
     } catch {
       // Ignore - profile fetch failed (e.g. logged out)
     }
@@ -152,6 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setAccessToken(null);
       setUser(null);
+      persistUser(null);
       setLoading(false);
     }
   }
@@ -215,6 +239,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [user, loading, error]
   );
+
+  React.useEffect(() => {
+    void hydrate();
+  }, []);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -24,7 +24,7 @@ export const Sidebar = ({ title, links, onLogout, footer }: SidebarProps) => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center shadow-lg"
+        className="md:hidden fixed top-4 left-4 z-50 w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center shadow-lg"
       >
         {isMobileMenuOpen ? (
           <X className="w-6 h-6 text-foreground" />
@@ -36,7 +36,7 @@ export const Sidebar = ({ title, links, onLogout, footer }: SidebarProps) => {
       {/* Overlay for mobile */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          className="md:hidden fixed inset-0 bg-black/50 z-30"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -44,9 +44,9 @@ export const Sidebar = ({ title, links, onLogout, footer }: SidebarProps) => {
       {/* Sidebar */}
       <aside className={`
         w-64 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col
-        fixed lg:sticky top-0 z-40
+        fixed md:sticky top-0 z-40
         transform transition-transform duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="p-6 border-b border-sidebar-border">
           <div className="flex items-center gap-3">

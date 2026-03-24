@@ -31,9 +31,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
     
     const sizeStyles = {
-      sm: variant === 'primary' ? 'h-9 px-4 rounded-full' : 'h-9 px-4 rounded-2xl',
-      md: variant === 'primary' ? 'h-11 px-6 rounded-full' : 'h-11 px-6 rounded-2xl',
-      lg: variant === 'primary' ? 'h-12 px-8 rounded-full' : 'h-12 px-8 rounded-2xl',
+      sm: variant === 'primary' ? 'h-10 px-4 rounded-full text-sm' : 'h-10 px-4 rounded-2xl text-sm',
+      md: variant === 'primary' ? 'h-12 px-6 rounded-full text-sm md:text-base' : 'h-12 px-6 rounded-2xl text-sm md:text-base',
+      lg: variant === 'primary' ? 'h-14 px-8 rounded-full text-base' : 'h-14 px-8 rounded-2xl text-base',
     };
     
     const iconSizeStyles = {

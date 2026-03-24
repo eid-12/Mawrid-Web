@@ -38,9 +38,9 @@ export default function SuperAdminLayout() {
   );
   
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background">
       <Sidebar title="Super Admin" links={links} onLogout={handleLogout} footer={adminInfo} />
-      <main className="flex-1 p-4 md:p-6 lg:p-8 lg:ml-0 w-full">
+      <main className="flex-1 w-full p-3 sm:p-4 md:p-6 lg:p-8 pt-20 md:pt-6 lg:ml-0">
         <Outlet />
       </main>
     </div>

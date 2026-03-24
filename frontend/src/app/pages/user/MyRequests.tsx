@@ -170,7 +170,7 @@ export default function MyRequests() {
       {/* Requests Table */}
       <Card padding="none">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[860px]">
             <thead className="bg-background border-b border-border">
               <tr>
                 <th className="text-left px-6 py-4 text-sm font-semibold" style={{ color: 'var(--text-heading)' }}>
@@ -316,7 +316,7 @@ export default function MyRequests() {
       {/* Request Detail Modal */}
       {selectedRequestData && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-          <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <Card className="max-w-2xl w-[90vw] sm:w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>

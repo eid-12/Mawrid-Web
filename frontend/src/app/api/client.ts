@@ -6,9 +6,20 @@ export type ApiError = {
 };
 
 let accessToken: string | null = null;
+const ACCESS_TOKEN_STORAGE_KEY = "mawrid_access_token";
+
+if (typeof window !== "undefined") {
+  accessToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+}
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  if (typeof window === "undefined") return;
+  if (token) {
+    window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+  } else {
+    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  }
 }
 
 export function getAccessToken() {

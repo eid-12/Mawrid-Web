@@ -517,7 +517,7 @@ export default function Colleges() {
       {/* ── Edit Modal ── */}
       {editCollege && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && setEditCollege(null)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-2xl w-[90vw] sm:w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#8CCDE6] to-[#8393DE] flex items-center justify-center">
@@ -618,7 +618,7 @@ export default function Colleges() {
       {/* ── Add College Modal ── */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={(e) => e.target === e.currentTarget && setShowAddModal(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-2xl w-[90vw] sm:w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#8CCDE6] to-[#8393DE] flex items-center justify-center">
@@ -689,7 +689,7 @@ export default function Colleges() {
           className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[60]"
           onClick={(e) => e.target === e.currentTarget && !isDeletingCollege && setShowDeleteConfirm(false)}
         >
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-2xl w-[90vw] sm:w-full max-w-xl overflow-hidden">
             <div className="px-6 py-5 border-b border-red-100 bg-red-50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">

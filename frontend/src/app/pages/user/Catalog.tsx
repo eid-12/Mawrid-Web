@@ -372,7 +372,7 @@ export default function Catalog() {
       {loading ? (
         <Card className="py-12 text-center text-muted-foreground">Loading...</Card>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedItems.map((item) => {
             const ItemIcon = getEquipmentIcon(item.name, item.category);
             const status = getStatus(item);

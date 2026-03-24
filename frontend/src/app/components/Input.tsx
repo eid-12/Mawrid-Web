@@ -31,14 +31,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             type={inputType}
-            className={`w-full h-12 px-4 ${Icon ? 'pl-12' : ''} ${isPassword ? 'pr-12' : ''} bg-input-background border rounded-2xl transition-all duration-200 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-muted disabled:cursor-not-allowed ${error ? 'border-red-500' : 'border-border hover:border-primary/30'} ${className}`}
+            className={`w-full h-12 px-4 text-base ${Icon ? 'pl-12' : ''} ${isPassword ? 'pr-12' : ''} bg-input-background border rounded-2xl transition-all duration-200 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-muted disabled:cursor-not-allowed ${error ? 'border-red-500' : 'border-border hover:border-primary/30'} ${className}`}
             {...props}
           />
           {isPassword && (
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>

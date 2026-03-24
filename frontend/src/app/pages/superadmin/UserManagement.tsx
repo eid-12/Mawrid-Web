@@ -343,7 +343,7 @@ export default function UserManagement() {
       {/* Table */}
       <Card padding="none">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[980px]">
             <thead className="bg-[#F5F9FF] border-b border-[#E2E8F0]">
               <tr>
                 <th className="text-left px-6 py-4 text-sm font-semibold text-[#0F172A]">User</th>
@@ -586,7 +586,7 @@ export default function UserManagement() {
       {/* ── Edit Modal ── */}
       {editUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={e => e.target === e.currentTarget && setEditUser(null)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-2xl w-[90vw] sm:w-full max-w-md flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#8CCDE6] to-[#8393DE] flex items-center justify-center">
@@ -682,7 +682,7 @@ export default function UserManagement() {
       {/* ── Add User Modal ── */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={e => e.target === e.currentTarget && setShowAddModal(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-2xl w-[90vw] sm:w-full max-w-md flex flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0]">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#8CCDE6] to-[#8393DE] flex items-center justify-center">
