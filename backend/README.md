@@ -1,63 +1,96 @@
-# Equipment Rental - Backend (Spring Boot)
+# Mawrid Backend (Spring Boot)
 
-Backend API for the equipment rental system. `application.properties` is the single source of configuration logic, and all sensitive values are read from OS/IDE environment variables.
+REST API and business logic for the Mawrid equipment platform.
 
-## Requirements
+## Stack
 
-- Java 17+
-- Maven 3.6+
+- Java 17
+- Spring Boot 3
+- Spring Security + JWT
+- Spring Data JPA (Hibernate)
 - MySQL
+- Spring Mail (SMTP)
 
-## Environment Variables
+## Prerequisites
 
-Set these in your OS environment or IDE Run Configuration before starting the backend.
+- JDK 17+
+- Maven 3.8+
+- MySQL server (local or container)
 
-### Required
+## Configuration
 
-- `DB_URL`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `JWT_SECRET` (must be random and at least 32 chars)
-- `RESEND_API_KEY`
+Main configuration file:
 
-### Optional (defaults exist in `application.properties`)
+- `src/main/resources/application.properties`
 
-- `FRONTEND_URL` (default: `http://localhost:5174`)
-- `APP_JWT_ACCESS_TTL_SECONDS` (default: `900`)
-- `APP_REFRESH_TTL_SECONDS` (default: `2592000`)
-- `APP_VERIFICATION_TTL_SECONDS` (default: `86400`)
-- `APP_RESET_TTL_SECONDS` (default: `3600`)
-- `MAIL_HOST` (default: `smtp.resend.com`)
-- `MAIL_PORT` (default: `587`)
-- `MAIL_USERNAME` (default: `resend`)
-- `MAIL_FROM` (default: `onboarding@resend.dev`)
+Common environment overrides supported by the backend:
 
-## Run
+- `FRONTEND_URL`
+- `APP_JWT_SECRET`
+- `APP_JWT_ACCESS_TTL_SECONDS`
+- `APP_REFRESH_TTL_SECONDS`
+- `APP_VERIFICATION_TTL_SECONDS`
+- `APP_RESET_TTL_SECONDS`
+- `APP_RESET_OTP_TTL_SECONDS`
+- `APP_VERIFICATION_OTP_TTL_SECONDS`
+- `MAIL_HOST`
+- `MAIL_PORT`
+- `MAIL_USERNAME`
+- `MAIL_PASSWORD`
+- `MAIL_FROM`
 
-- IDE: Run `EquipmentRentalApplication`.
-- Terminal (from `backend`):
+## Run Locally
+
+From `backend`:
 
 ```bash
 mvn spring-boot:run
 ```
 
-Spring Boot will read configuration placeholders from system environment variables.
+Or run `EquipmentRentalApplication` directly from your IDE.
 
-## Auth Endpoints
+Default API port:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/auth/register` | Register user and send verification email |
-| GET | `/api/auth/verify-email?token=...` | Verify email |
-| POST | `/api/auth/resend-verification` | Resend verification email |
-| POST | `/api/auth/login` | Login (returns access token and sets refresh cookie) |
+- `8080`
+
+## Build
+
+```bash
+mvn clean package -DskipTests
+```
+
+Generated artifact:
+
+- `target/*.jar`
+
+## Docker
+
+`backend/Dockerfile` is multi-stage:
+
+1. Build with Maven + OpenJDK 17
+2. Run with Eclipse Temurin JRE 17
+
+## Core Auth Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/auth/register` | Create account and send verification OTP |
+| POST | `/api/auth/verify-registration` | Verify signup OTP |
+| POST | `/api/auth/login` | Login and issue access token |
 | POST | `/api/auth/refresh` | Rotate refresh token and issue new access token |
-| POST | `/api/auth/logout` | Logout |
-| GET | `/api/auth/me` | Current authenticated user |
-| POST | `/api/auth/forgot-password` | Send password reset email |
-| POST | `/api/auth/reset-password` | Reset password |
+| POST | `/api/auth/logout` | Revoke refresh session |
+| GET | `/api/auth/me` | Get authenticated user profile |
+| POST | `/api/auth/resend-verification` | Resend registration OTP |
+| POST | `/api/auth/forgot-password` | Send reset OTP |
+| POST | `/api/auth/verify-reset-otp` | Verify reset OTP and reset flow |
 
 ## Notes
 
-- CORS is centralized and uses `app.frontend.url` (`FRONTEND_URL`).
-- Email delivery is configured through Resend SMTP.
+- CORS is controlled by `app.frontend.url`.
+- The app includes compatibility patches for older legacy `users` table columns (such as `password`/`username`) during startup.
+- Keep secrets out of source control and inject them via environment variables in production.
+
+## Related Docs
+
+- Project root: [`../README.md`](../README.md)
+- Frontend guide: [`../frontend/README.md`](../frontend/README.md)
