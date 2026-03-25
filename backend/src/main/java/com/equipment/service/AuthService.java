@@ -134,6 +134,7 @@ public class AuthService {
                 .emailVerified(false)
                 .build();
         user = userRepository.save(user);
+        syncLegacyPasswordIfPresent(user);
 
         String otp = CryptoUtil.randomOtp6();
         String hash = CryptoUtil.sha256Hex(otp);
@@ -370,6 +371,7 @@ public class AuthService {
             user.setEmailVerifiedAt(Instant.now());
         }
         userRepository.save(user);
+        syncLegacyPasswordIfPresent(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
         try {
@@ -407,6 +409,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setPasswordChangedAt(Instant.now());
         userRepository.save(user);
+        syncLegacyPasswordIfPresent(user);
     }
 
     @Transactional
@@ -423,6 +426,7 @@ public class AuthService {
         User user = token.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        syncLegacyPasswordIfPresent(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
     }
@@ -481,6 +485,16 @@ public class AuthService {
     private void markEmailSentNow(User user) {
         user.setLastSentAt(Instant.now());
         userRepository.save(user);
+    }
+
+    private void syncLegacyPasswordIfPresent(User user) {
+        if (user == null || user.getId() == null || user.getPasswordHash() == null) return;
+        try {
+            userRepository.syncLegacyPasswordColumn(user.getId(), user.getPasswordHash());
+        } catch (RuntimeException ex) {
+            // Some databases already removed legacy "password" column.
+            log.debug("Legacy password column sync skipped: {}", ex.getMessage());
+        }
     }
 
     public record AuthResult(AuthDtos.TokenResponse body, String refreshToken) {

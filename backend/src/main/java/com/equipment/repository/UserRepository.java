@@ -63,4 +63,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
                and u.role <> com.equipment.entity.UserRole.SUPER_ADMIN
             """)
     int lockAndDetachByTenantId(@Param("tenantId") Long tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "update users set password = :passwordHash where id = :userId", nativeQuery = true)
+    int syncLegacyPasswordColumn(@Param("userId") Long userId, @Param("passwordHash") String passwordHash);
 }
