@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  mysql-server:
+    image: mysql:8.0
+    container_name: mysql-server
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: mapping_db
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mawrid-backend:
+    build:
+      context: ./backend
+    container_name: mawrid-backend
+    restart: unless-stopped
+    depends_on:
+      mysql-server:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-server:3306/mapping_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      FRONTEND_URL: http://localhost:3000
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-change-this-in-production}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    ports:
+      - "8080:8080"
+
+  mawrid-frontend:
+    build:
+      context: ./frontend
+    container_name: mawrid-frontend
+    restart: unless-stopped
+    depends_on:
+      - mawrid-backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  mysql_data:
