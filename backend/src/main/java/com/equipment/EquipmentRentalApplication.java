@@ -12,10 +12,13 @@ import com.equipment.repository.EquipmentRepository;
 import com.equipment.repository.EquipmentUnitRepository;
 import com.equipment.repository.TenantRepository;
 import com.equipment.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.time.Instant;
@@ -28,6 +31,7 @@ import java.util.Random;
 @SpringBootApplication
 @EnableAsync
 public class EquipmentRentalApplication {
+    private static final Logger log = LoggerFactory.getLogger(EquipmentRentalApplication.class);
 
     private static final String DEFAULT_PASSWORD_HASH =
             "$2a$10$dzgFoj3JFwc.ZZvG5HUIPOk.7c5TadvNXzu4mbGOicxcYGNuhBaQC";
@@ -220,6 +224,52 @@ public class EquipmentRentalApplication {
                         .decidedAt("PENDING".equals(status) ? null : now.minusSeconds((long) i * 300))
                         .build();
                 borrowRequestRepository.save(request);
+            }
+        };
+    }
+
+    @Bean
+    CommandLineRunner ensureLegacyUserPasswordColumnCompatibility(JdbcTemplate jdbcTemplate) {
+        return args -> {
+            try {
+                Integer hasLegacyPasswordColumn = jdbcTemplate.queryForObject(
+                        """
+                        SELECT COUNT(*)
+                        FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'users'
+                          AND COLUMN_NAME = 'password'
+                        """,
+                        Integer.class
+                );
+                Integer hasPasswordHashColumn = jdbcTemplate.queryForObject(
+                        """
+                        SELECT COUNT(*)
+                        FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'users'
+                          AND COLUMN_NAME = 'password_hash'
+                        """,
+                        Integer.class
+                );
+
+                if (Integer.valueOf(1).equals(hasLegacyPasswordColumn)
+                        && Integer.valueOf(1).equals(hasPasswordHashColumn)) {
+                    jdbcTemplate.update("""
+                            UPDATE users
+                               SET password = password_hash
+                             WHERE (password IS NULL OR password = '')
+                               AND password_hash IS NOT NULL
+                            """);
+
+                    jdbcTemplate.execute("""
+                            ALTER TABLE users
+                            MODIFY COLUMN password VARCHAR(255) NULL DEFAULT NULL
+                            """);
+                    log.info("Applied legacy users.password compatibility patch.");
+                }
+            } catch (Exception ex) {
+                log.warn("Skipped legacy users.password compatibility patch: {}", ex.getMessage());
             }
         };
     }
