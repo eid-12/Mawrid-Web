@@ -1,5 +1,7 @@
 # Mawrid Web Application
 
+[![CI/CD to Docker Hub](https://github.com/eid-12/Mawrid-Web/actions/workflows/main.yml/badge.svg)](https://github.com/eid-12/Mawrid-Web/actions/workflows/main.yml)
+
 Mawrid is a full-stack equipment borrowing and management platform for university colleges.
 This repository contains:
 
