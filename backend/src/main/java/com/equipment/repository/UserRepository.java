@@ -68,4 +68,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Transactional
     @Query(value = "update users set password = :passwordHash where id = :userId", nativeQuery = true)
     int syncLegacyPasswordColumn(@Param("userId") Long userId, @Param("passwordHash") String passwordHash);
+
+    @Modifying
+    @Transactional
+    @Query(value = "update users set username = :username where id = :userId", nativeQuery = true)
+    int syncLegacyUsernameColumn(@Param("userId") Long userId, @Param("username") String username);
 }

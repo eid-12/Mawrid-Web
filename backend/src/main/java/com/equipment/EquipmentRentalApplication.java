@@ -268,8 +268,33 @@ public class EquipmentRentalApplication {
                             """);
                     log.info("Applied legacy users.password compatibility patch.");
                 }
+
+                Integer hasLegacyUsernameColumn = jdbcTemplate.queryForObject(
+                        """
+                        SELECT COUNT(*)
+                        FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'users'
+                          AND COLUMN_NAME = 'username'
+                        """,
+                        Integer.class
+                );
+
+                if (Integer.valueOf(1).equals(hasLegacyUsernameColumn)) {
+                    jdbcTemplate.update("""
+                            UPDATE users
+                               SET username = COALESCE(NULLIF(email, ''), name, CONCAT('user_', id))
+                             WHERE username IS NULL OR username = ''
+                            """);
+
+                    jdbcTemplate.execute("""
+                            ALTER TABLE users
+                            MODIFY COLUMN username VARCHAR(255) NULL DEFAULT NULL
+                            """);
+                    log.info("Applied legacy users.username compatibility patch.");
+                }
             } catch (Exception ex) {
-                log.warn("Skipped legacy users.password compatibility patch: {}", ex.getMessage());
+                log.warn("Skipped legacy users compatibility patch: {}", ex.getMessage());
             }
         };
     }

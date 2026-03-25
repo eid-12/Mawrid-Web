@@ -134,7 +134,7 @@ public class AuthService {
                 .emailVerified(false)
                 .build();
         user = userRepository.save(user);
-        syncLegacyPasswordIfPresent(user);
+        syncLegacyUserColumnsIfPresent(user);
 
         String otp = CryptoUtil.randomOtp6();
         String hash = CryptoUtil.sha256Hex(otp);
@@ -371,7 +371,7 @@ public class AuthService {
             user.setEmailVerifiedAt(Instant.now());
         }
         userRepository.save(user);
-        syncLegacyPasswordIfPresent(user);
+        syncLegacyUserColumnsIfPresent(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
         try {
@@ -409,7 +409,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setPasswordChangedAt(Instant.now());
         userRepository.save(user);
-        syncLegacyPasswordIfPresent(user);
+        syncLegacyUserColumnsIfPresent(user);
     }
 
     @Transactional
@@ -426,7 +426,7 @@ public class AuthService {
         User user = token.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        syncLegacyPasswordIfPresent(user);
+        syncLegacyUserColumnsIfPresent(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
     }
@@ -487,13 +487,25 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    private void syncLegacyPasswordIfPresent(User user) {
+    private void syncLegacyUserColumnsIfPresent(User user) {
         if (user == null || user.getId() == null || user.getPasswordHash() == null) return;
         try {
             userRepository.syncLegacyPasswordColumn(user.getId(), user.getPasswordHash());
         } catch (RuntimeException ex) {
             // Some databases already removed legacy "password" column.
             log.debug("Legacy password column sync skipped: {}", ex.getMessage());
+        }
+        try {
+            String fallbackUsername = user.getEmail();
+            if (fallbackUsername == null || fallbackUsername.isBlank()) {
+                fallbackUsername = user.getName();
+            }
+            if (fallbackUsername != null && !fallbackUsername.isBlank()) {
+                userRepository.syncLegacyUsernameColumn(user.getId(), fallbackUsername.trim());
+            }
+        } catch (RuntimeException ex) {
+            // Some databases already removed legacy "username" column.
+            log.debug("Legacy username column sync skipped: {}", ex.getMessage());
         }
     }
 
