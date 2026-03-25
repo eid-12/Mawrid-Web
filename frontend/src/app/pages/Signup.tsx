@@ -10,6 +10,14 @@ import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
 
 type TenantOption = { id: number; name: string; status: string };
+type SignupErrors = {
+  fullName?: string;
+  email?: string;
+  college?: string;
+  password?: string;
+  confirmPassword?: string;
+  terms?: string;
+};
 
 export default function Signup() {
   const NAME_MAX_LENGTH = 60;
@@ -25,11 +33,12 @@ export default function Signup() {
     confirmPassword: '',
   });
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<SignupErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
     api.get<Array<{ id: number; name: string; status: string }>>('/api/tenants/public/active')
@@ -49,6 +58,9 @@ export default function Signup() {
   const handlePasswordChange = (value: string) => {
     setFormData({ ...formData, password: value });
     setPasswordStrength(calculatePasswordStrength(value));
+    if (errors.password) {
+      setErrors((prev) => ({ ...prev, password: undefined }));
+    }
   };
   
   const getStrengthColor = () => {
@@ -66,7 +78,7 @@ export default function Signup() {
   };
   
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors: SignupErrors = {};
     const trimmedName = formData.fullName.trim();
     
     if (!trimmedName) {
@@ -100,6 +112,10 @@ export default function Signup() {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
+
+    if (!acceptedTerms) {
+      newErrors.terms = 'You must agree to Terms of Service and Privacy Policy';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -113,9 +129,9 @@ export default function Signup() {
 
     setIsSubmitting(true);
     try {
-      const tenantId = colleges.find((c) => c.name === formData.college)?.id ?? null;
+      const tenantId = Number(formData.college);
       if (!tenantId) {
-        setErrors((prev: any) => ({ ...prev, college: 'College is required' }));
+        setErrors((prev) => ({ ...prev, college: 'College is required' }));
         setIsSubmitting(false);
         return;
       }
@@ -127,8 +143,9 @@ export default function Signup() {
         password: formData.password,
       });
       navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-    } catch (e: any) {
-      setSubmitError(e?.message ?? 'Signup failed. Check the console/network tab.');
+    } catch (e: unknown) {
+      const message = (e as { message?: string })?.message ?? 'Signup failed. Check the console/network tab.';
+      setSubmitError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -163,7 +180,10 @@ export default function Signup() {
                 label="Full Name"
                 placeholder="John Doe"
                 value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, fullName: e.target.value });
+                  if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: undefined }));
+                }}
                 icon={User}
                 error={errors.fullName}
                 maxLength={NAME_MAX_LENGTH}
@@ -180,13 +200,15 @@ export default function Signup() {
                   </div>
                   <select
                     value={formData.college}
-                    onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-                    required
+                    onChange={(e) => {
+                      setFormData({ ...formData, college: e.target.value });
+                      if (errors.college) setErrors((prev) => ({ ...prev, college: undefined }));
+                    }}
                     className={`w-full h-12 pl-12 pr-4 bg-white dark:bg-[#0f172a] border rounded-2xl transition-all duration-200 text-[#334155] dark:text-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#8393DE]/50 ${errors.college ? 'border-red-500' : 'border-[#E2E8F0] dark:border-[#334155] hover:border-[#8393DE]/30'}`}
                   >
                     <option value="">Select your college</option>
                     {colleges.map((college) => (
-                      <option key={college.id} value={college.name}>
+                      <option key={college.id} value={college.id}>
                         {college.name}
                       </option>
                     ))}
@@ -203,7 +225,10 @@ export default function Signup() {
               label="Email"
               placeholder="example@email.com"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+              }}
               icon={Mail}
               error={errors.email}
               helperText={!errors.email ? 'Enter your primary email address for account verification' : undefined}
@@ -259,7 +284,10 @@ export default function Signup() {
               label="Confirm Password"
               placeholder="Re-enter your password"
               value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, confirmPassword: e.target.value });
+                if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+              }}
               icon={Lock}
               error={errors.confirmPassword}
               required
@@ -271,7 +299,11 @@ export default function Signup() {
                   type="checkbox"
                   id="terms"
                   className="w-4 h-4 rounded border-[#E2E8F0] dark:border-[#334155] text-[#8393DE] focus:ring-[#8393DE]/50 mt-0.5"
-                  required
+                  checked={acceptedTerms}
+                  onChange={(e) => {
+                    setAcceptedTerms(e.target.checked);
+                    if (errors.terms) setErrors((prev) => ({ ...prev, terms: undefined }));
+                  }}
                 />
                 <label htmlFor="terms" className="text-sm text-[#334155] dark:text-[#E2E8F0]">
                   I agree to the{' '}
@@ -298,6 +330,9 @@ export default function Signup() {
                   </a>
                 </label>
               </div>
+              {errors.terms && (
+                <p className="mb-4 text-sm text-red-600">{errors.terms}</p>
+              )}
               
               <Button type="submit" fullWidth icon={ArrowRight} iconPosition="right" disabled={isSubmitting}>
                 {isSubmitting ? 'Creating...' : 'Create Account'}
