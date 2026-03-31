@@ -146,8 +146,12 @@ public class AuthService {
                 .build();
         userTokenRepository.save(t);
         enforceEmailCooldown(user);
-        emailService.sendVerificationOtpEmail(user.getEmail(), otp);
-        markEmailSentNow(user);
+        try {
+            emailService.sendVerificationOtpEmailBlocking(user.getEmail(), otp);
+            markEmailSentNow(user);
+        } catch (RuntimeException ex) {
+            log.warn("Registration verification email failed for {}: {}", user.getEmail(), ex.getMessage());
+        }
     }
 
     @Transactional
@@ -324,8 +328,12 @@ public class AuthService {
                 .expiresAt(Instant.now().plusSeconds(registrationOtpTtlSeconds))
                 .build();
         userTokenRepository.save(t);
-        emailService.sendVerificationOtpEmail(user.getEmail(), otp);
-        markEmailSentNow(user);
+        try {
+            emailService.sendVerificationOtpEmailBlocking(user.getEmail(), otp);
+            markEmailSentNow(user);
+        } catch (RuntimeException ex) {
+            log.warn("Resend verification email failed for {}: {}", user.getEmail(), ex.getMessage());
+        }
     }
 
     @Transactional
@@ -345,8 +353,12 @@ public class AuthService {
                 .expiresAt(Instant.now().plusSeconds(otpTtlSeconds))
                 .build();
         userTokenRepository.save(t);
-        emailService.sendOtpEmail(user.getEmail(), otp);
-        markEmailSentNow(user);
+        try {
+            emailService.sendOtpEmailBlocking(user.getEmail(), otp);
+            markEmailSentNow(user);
+        } catch (RuntimeException ex) {
+            log.warn("Forgot-password OTP email failed for {}: {}", user.getEmail(), ex.getMessage());
+        }
     }
 
     @Transactional
@@ -375,7 +387,7 @@ public class AuthService {
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
         try {
-            emailService.sendTemporaryPasswordEmail(user.getEmail(), user.getName(), tempPassword);
+            emailService.sendTemporaryPasswordEmailBlocking(user.getEmail(), user.getName(), tempPassword);
         } catch (RuntimeException ex) {
             // Keep account activation/password reset persisted even if mail provider is temporarily unavailable.
             log.warn("Temporary password email failed for user {}: {}", user.getEmail(), ex.getMessage());

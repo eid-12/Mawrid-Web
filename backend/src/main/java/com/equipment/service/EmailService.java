@@ -153,9 +153,18 @@ public class EmailService {
     /**
      * OTP verification email for public signup - 6-digit code.
      * Subject: "Verify Your Mawrid Account".
+     * <p>Use {@link #sendVerificationOtpEmailBlocking} from {@code @Transactional} services so SMTP runs
+     * in the same thread and failures can be handled without marking the DB transaction rollback-only.</p>
      */
     @Async
     public void sendVerificationOtpEmail(String to, String otp) {
+        sendVerificationOtpEmailBlocking(to, otp);
+    }
+
+    /**
+     * Same as {@link #sendVerificationOtpEmail} but synchronous (safe to call inside a transaction).
+     */
+    public void sendVerificationOtpEmailBlocking(String to, String otp) {
         String description = """
             Welcome to Mawrid! Your verification code to activate your account is:
             <br><br>
@@ -184,6 +193,10 @@ public class EmailService {
      */
     @Async
     public void sendOtpEmail(String to, String otp) {
+        sendOtpEmailBlocking(to, otp);
+    }
+
+    public void sendOtpEmailBlocking(String to, String otp) {
         String description = """
             Your verification code for resetting your Mawrid password is:
             <br><br>
@@ -200,6 +213,10 @@ public class EmailService {
      */
     @Async
     public void sendTemporaryPasswordEmail(String to, String userName, String temporaryPassword) {
+        sendTemporaryPasswordEmailBlocking(to, userName, temporaryPassword);
+    }
+
+    public void sendTemporaryPasswordEmailBlocking(String to, String userName, String temporaryPassword) {
         String loginUrl = frontendUrl + "/login";
         String description = """
             Your password has been reset successfully.
