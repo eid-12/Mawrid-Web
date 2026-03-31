@@ -58,6 +58,8 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final UserRegistrationTransactionService userRegistrationTransactionService;
+    private final LegacyUserColumnSyncService legacyUserColumnSyncService;
 
     @Value("${app.refresh.ttl-seconds:2592000}") // 30 days
     private long refreshTtlSeconds;
@@ -92,65 +94,21 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
+    /**
+     * Public signup: DB work commits in a dedicated transactional service; email runs after commit so SMTP
+     * and legacy SQL cannot mark the signup transaction rollback-only.
+     */
     public void register(AuthDtos.RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists");
-        }
-        String normalizedName = request.getName() != null ? request.getName().trim() : "";
-        if (normalizedName.isBlank()) {
-            throw new IllegalArgumentException("Full name is required");
-        }
-        if (normalizedName.length() > 60) {
-            throw new IllegalArgumentException("Full name must be at most 60 characters");
-        }
-        String password = request.getPassword() != null ? request.getPassword() : "";
-        boolean hasMinLength = password.length() >= 8;
-        boolean hasUpperAndLower = password.matches(".*[a-z].*") && password.matches(".*[A-Z].*");
-        boolean hasNumber = password.matches(".*\\d.*");
-        boolean hasSpecial = password.matches(".*[^a-zA-Z\\d].*");
-        if (!(hasMinLength && hasUpperAndLower && hasNumber && hasSpecial)) {
-            throw new IllegalArgumentException("Password must satisfy all 4 requirements");
-        }
-        Tenant tenant = null;
-        if (request.getTenantId() == null) {
-            throw new IllegalArgumentException("College is required");
-        }
-        tenant = tenantRepository.findById(request.getTenantId())
-                .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + request.getTenantId()));
-        if (!"ACTIVE".equals(tenant.getStatus())) {
-            throw new IllegalArgumentException("Cannot register under a deactivated college. Please select an active college.");
-        }
-
-        // Flow B: Public Registration - OTP verification, account pending until verified
-        User user = User.builder()
-                .tenant(tenant)
-                .role(request.getRole() == null ? UserRole.USER : request.getRole())
-                .name(normalizedName)
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .passwordHash(passwordEncoder.encode(password))
-                .isActive(false)
-                .emailVerified(false)
-                .build();
-        user = userRepository.save(user);
-        syncLegacyUserColumnsIfPresent(user);
-
-        String otp = CryptoUtil.randomOtp6();
-        String hash = CryptoUtil.sha256Hex(otp);
-        UserToken t = UserToken.builder()
-                .user(user)
-                .tokenType(TOKEN_TYPE_REGISTRATION_OTP)
-                .tokenHash(hash)
-                .expiresAt(Instant.now().plusSeconds(registrationOtpTtlSeconds))
-                .build();
-        userTokenRepository.save(t);
+        UserRegistrationTransactionService.PendingSignup pending =
+                userRegistrationTransactionService.createPendingSignup(request);
+        User user = userRepository.findByEmail(pending.email())
+                .orElseThrow(() -> new IllegalStateException("User not found after registration"));
         enforceEmailCooldown(user);
         try {
-            emailService.sendVerificationOtpEmailBlocking(user.getEmail(), otp);
+            emailService.sendVerificationOtpEmailBlocking(pending.email(), pending.plainOtp());
             markEmailSentNow(user);
         } catch (RuntimeException ex) {
-            log.warn("Registration verification email failed for {}: {}", user.getEmail(), ex.getMessage());
+            log.warn("Registration verification email failed for {}: {}", pending.email(), ex.getMessage());
         }
     }
 
@@ -383,7 +341,7 @@ public class AuthService {
             user.setEmailVerifiedAt(Instant.now());
         }
         userRepository.save(user);
-        syncLegacyUserColumnsIfPresent(user);
+        legacyUserColumnSyncService.syncAfterUserPersist(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
         try {
@@ -421,7 +379,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setPasswordChangedAt(Instant.now());
         userRepository.save(user);
-        syncLegacyUserColumnsIfPresent(user);
+        legacyUserColumnSyncService.syncAfterUserPersist(user);
     }
 
     @Transactional
@@ -438,7 +396,7 @@ public class AuthService {
         User user = token.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        syncLegacyUserColumnsIfPresent(user);
+        legacyUserColumnSyncService.syncAfterUserPersist(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
     }
@@ -497,28 +455,6 @@ public class AuthService {
     private void markEmailSentNow(User user) {
         user.setLastSentAt(Instant.now());
         userRepository.save(user);
-    }
-
-    private void syncLegacyUserColumnsIfPresent(User user) {
-        if (user == null || user.getId() == null || user.getPasswordHash() == null) return;
-        try {
-            userRepository.syncLegacyPasswordColumn(user.getId(), user.getPasswordHash());
-        } catch (RuntimeException ex) {
-            // Some databases already removed legacy "password" column.
-            log.debug("Legacy password column sync skipped: {}", ex.getMessage());
-        }
-        try {
-            String fallbackUsername = user.getEmail();
-            if (fallbackUsername == null || fallbackUsername.isBlank()) {
-                fallbackUsername = user.getName();
-            }
-            if (fallbackUsername != null && !fallbackUsername.isBlank()) {
-                userRepository.syncLegacyUsernameColumn(user.getId(), fallbackUsername.trim());
-            }
-        } catch (RuntimeException ex) {
-            // Some databases already removed legacy "username" column.
-            log.debug("Legacy username column sync skipped: {}", ex.getMessage());
-        }
     }
 
     public record AuthResult(AuthDtos.TokenResponse body, String refreshToken) {
