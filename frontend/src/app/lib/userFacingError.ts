@@ -17,6 +17,10 @@ export function formatApiError(error: unknown, fallback = "Something went wrong.
   if (err?.code === "COLLEGE_REMOVED") {
     return "Access denied: your college has been removed from the system. Please contact an administrator.";
   }
+  if (err?.status === 429) {
+    if (raw && !/^request failed \(\d+\)$/i.test(raw)) return raw;
+    return "Please wait 60 seconds before requesting another email.";
+  }
 
   if (
     err?.status === 0 ||

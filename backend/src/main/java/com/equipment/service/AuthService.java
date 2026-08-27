@@ -10,7 +10,6 @@ import com.equipment.exception.AccountInactiveException;
 import com.equipment.exception.CollegeDeactivatedException;
 import com.equipment.exception.CollegeRemovedException;
 import com.equipment.exception.EmailNotVerifiedException;
-import com.equipment.exception.TooManyRequestsException;
 import com.equipment.repository.RefreshTokenRepository;
 import com.equipment.repository.TenantRepository;
 import com.equipment.repository.UserRepository;
@@ -39,9 +38,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-    private static final long EMAIL_SEND_COOLDOWN_SECONDS = 60;
-    private static final String EMAIL_RATE_LIMIT_MESSAGE =
-            "Please wait 60 seconds before requesting another email.";
 
     public static final String TOKEN_TYPE_EMAIL_VERIFY = "EMAIL_VERIFY";
     public static final String TOKEN_TYPE_PASSWORD_RESET = "PASSWORD_RESET";
@@ -59,6 +55,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final EmailService emailService;
     private final UserRegistrationTransactionService userRegistrationTransactionService;
+    private final AuthEmailTransactionService authEmailTransactionService;
     private final LegacyUserColumnSyncService legacyUserColumnSyncService;
 
     @Value("${app.refresh.ttl-seconds:2592000}") // 30 days
@@ -69,12 +66,6 @@ public class AuthService {
 
     @Value("${app.reset.ttl-seconds:3600}") // 1h
     private long resetTtlSeconds;
-
-    @Value("${app.reset.otp-ttl-seconds:300}") // 5 min
-    private long otpTtlSeconds;
-
-    @Value("${app.verification.otp-ttl-seconds:600}") // 10 min for registration OTP
-    private long registrationOtpTtlSeconds;
 
     @Transactional
     public AuthDtos.MeResponse me(AppUserPrincipal principal) {
@@ -101,12 +92,8 @@ public class AuthService {
     public void register(AuthDtos.RegisterRequest request) {
         UserRegistrationTransactionService.PendingSignup pending =
                 userRegistrationTransactionService.createPendingSignup(request);
-        User user = userRepository.findByEmail(pending.email())
-                .orElseThrow(() -> new IllegalStateException("User not found after registration"));
-        enforceEmailCooldown(user);
         try {
             emailService.sendVerificationOtpEmailBlocking(pending.email(), pending.plainOtp());
-            markEmailSentNow(user);
         } catch (RuntimeException ex) {
             log.warn("Registration verification email failed for {}: {}", pending.email(), ex.getMessage());
         }
@@ -270,52 +257,20 @@ public class AuthService {
         userTokenRepository.save(token);
     }
 
-    @Transactional
     public void resendVerification(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        if (Boolean.TRUE.equals(user.getEmailVerified())) {
-            throw new IllegalArgumentException("Email already verified");
-        }
-        enforceEmailCooldown(user);
-        userTokenRepository.deleteByUserIdAndTokenType(user.getId(), TOKEN_TYPE_REGISTRATION_OTP);
-        String otp = CryptoUtil.randomOtp6();
-        String hash = CryptoUtil.sha256Hex(otp);
-        UserToken t = UserToken.builder()
-                .user(user)
-                .tokenType(TOKEN_TYPE_REGISTRATION_OTP)
-                .tokenHash(hash)
-                .expiresAt(Instant.now().plusSeconds(registrationOtpTtlSeconds))
-                .build();
-        userTokenRepository.save(t);
+        AuthEmailTransactionService.IssuedEmailOtp issued =
+                authEmailTransactionService.issueResendVerificationOtp(email);
         try {
-            emailService.sendVerificationOtpEmailBlocking(user.getEmail(), otp);
-            markEmailSentNow(user);
+            emailService.sendVerificationOtpEmailBlocking(issued.email(), issued.otp());
         } catch (RuntimeException ex) {
-            log.warn("Resend verification email failed for {}: {}", user.getEmail(), ex.getMessage());
+            log.warn("Resend verification email failed for {}: {}", issued.email(), ex.getMessage());
         }
     }
 
-    @Transactional
     public void forgotPassword(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
-        if (Boolean.TRUE.equals(user.getEmailVerified()) && !Boolean.TRUE.equals(user.getIsActive())) {
-            throw new AccountInactiveException();
-        }
-        enforceEmailCooldown(user);
-        userTokenRepository.deleteByUserIdAndTokenType(user.getId(), TOKEN_TYPE_PASSWORD_RESET_OTP);
-        String otp = CryptoUtil.randomOtp6();
-        String hash = CryptoUtil.sha256Hex(otp);
-        UserToken t = UserToken.builder()
-                .user(user)
-                .tokenType(TOKEN_TYPE_PASSWORD_RESET_OTP)
-                .tokenHash(hash)
-                .expiresAt(Instant.now().plusSeconds(otpTtlSeconds))
-                .build();
-        userTokenRepository.save(t);
-        emailService.sendOtpEmailBlocking(user.getEmail(), otp);
-        markEmailSentNow(user);
+        AuthEmailTransactionService.IssuedEmailOtp issued =
+                authEmailTransactionService.issueForgotPasswordOtp(email);
+        emailService.sendOtpEmailBlocking(issued.email(), issued.otp());
     }
 
     @Transactional
@@ -434,20 +389,6 @@ public class AuthService {
         boolean detachedFromCollege = user.getTenant() == null;
         boolean inactive = !Boolean.TRUE.equals(user.getIsActive());
         return detachedFromCollege && inactive;
-    }
-
-    private void enforceEmailCooldown(User user) {
-        Instant lastSentAt = user.getLastSentAt();
-        if (lastSentAt == null) return;
-        Instant allowedAt = lastSentAt.plusSeconds(EMAIL_SEND_COOLDOWN_SECONDS);
-        if (allowedAt.isAfter(Instant.now())) {
-            throw new TooManyRequestsException(EMAIL_RATE_LIMIT_MESSAGE);
-        }
-    }
-
-    private void markEmailSentNow(User user) {
-        user.setLastSentAt(Instant.now());
-        userRepository.save(user);
     }
 
     public record AuthResult(AuthDtos.TokenResponse body, String refreshToken, boolean rememberMe) {

@@ -75,6 +75,7 @@ public class UserRegistrationTransactionService {
                 .passwordHash(passwordEncoder.encode(password))
                 .isActive(false)
                 .emailVerified(false)
+                .lastSentAt(Instant.now())
                 .build();
         user = userRepository.save(user);
         legacyUserColumnSyncService.syncAfterUserPersist(user);

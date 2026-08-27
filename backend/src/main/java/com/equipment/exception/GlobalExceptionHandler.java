@@ -66,6 +66,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleTooManyRequests(TooManyRequestsException ex) {
         return ResponseEntity
                 .status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", "60")
                 .body(Map.of("error", ex.getMessage()));
     }
 

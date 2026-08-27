@@ -1,4 +1,4 @@
-import { useState, type FormEvent, useRef } from 'react';
+import { useState, type FormEvent, useRef, useEffect } from 'react';
 import { Link } from 'react-router';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -6,21 +6,62 @@ import { Card } from '../components/Card';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { formatApiError } from '../lib/userFacingError';
+import type { ApiError } from '../api/client';
 
 type Step = 'email' | 'otp' | 'success';
 
 export default function ForgotPassword() {
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const RESEND_COOLDOWN_SECONDS = 60;
   const { forgotPassword, verifyOtpAndResetPassword } = useAuth();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [nowTick, setNowTick] = useState(Date.now());
   const otpInputRef = useRef<HTMLInputElement>(null);
+  const cooldownKey = email.trim()
+    ? `forgot_resend_until_${email.trim().toLowerCase()}`
+    : null;
+  const resendRemainingSeconds = Math.max(0, Math.ceil((resendAvailableAt - nowTick) / 1000));
+  const resendBlocked = resendRemainingSeconds > 0;
+
+  const startSendCooldown = (targetEmail: string) => {
+    const normalized = targetEmail.trim().toLowerCase();
+    if (!normalized) return;
+    const until = Date.now() + RESEND_COOLDOWN_SECONDS * 1000;
+    window.localStorage.setItem(`forgot_resend_until_${normalized}`, String(until));
+    setNowTick(Date.now());
+    setResendAvailableAt(until);
+  };
+
+  useEffect(() => {
+    setNowTick(Date.now());
+    if (!cooldownKey) {
+      setResendAvailableAt(0);
+      return;
+    }
+    const raw = window.localStorage.getItem(cooldownKey);
+    const parsed = raw ? Number(raw) : 0;
+    if (!Number.isFinite(parsed) || parsed <= Date.now()) {
+      window.localStorage.removeItem(cooldownKey);
+      setResendAvailableAt(0);
+      return;
+    }
+    setResendAvailableAt(parsed);
+  }, [cooldownKey]);
+
+  useEffect(() => {
+    if (!resendBlocked) return;
+    const timer = window.setInterval(() => setNowTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendBlocked]);
 
   const handleSendCode = async (e: FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || resendBlocked) return;
     setError(null);
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
@@ -34,10 +75,15 @@ export default function ForgotPassword() {
     setIsSubmitting(true);
     try {
       await forgotPassword(trimmedEmail);
+      startSendCooldown(trimmedEmail);
       setStep('otp');
       setOtp('');
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (e: unknown) {
+      const err = e as ApiError;
+      if (err?.status === 429) {
+        startSendCooldown(trimmedEmail);
+      }
       setError(formatApiError(e, 'Failed to send code'));
     } finally {
       setIsSubmitting(false);
@@ -105,8 +151,12 @@ export default function ForgotPassword() {
                 required
                 helperText="Enter the email address associated with your account"
               />
-              <Button type="submit" fullWidth disabled={isSubmitting}>
-                {isSubmitting ? 'Sending...' : 'Send Code'}
+              <Button type="submit" fullWidth disabled={isSubmitting || resendBlocked}>
+                {isSubmitting
+                  ? 'Sending...'
+                  : resendBlocked
+                    ? `Try again in ${resendRemainingSeconds}s`
+                    : 'Send Code'}
               </Button>
             </form>
             <div className="mt-6">
@@ -128,7 +178,7 @@ export default function ForgotPassword() {
                 </div>
               )}
               <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
-                We sent a 6-digit code to <strong>{email}</strong>
+                We sent a 6-digit code to <strong>{email}</strong>. It expires in 5 minutes.
               </p>
               <div>
                 <label className="block text-sm font-medium text-[#334155] dark:text-[#E2E8F0] mb-1.5">Verification Code</label>
@@ -152,9 +202,9 @@ export default function ForgotPassword() {
                 variant="secondary"
                 fullWidth
                 onClick={handleSendCode}
-                disabled={isSubmitting}
+                disabled={isSubmitting || resendBlocked}
               >
-                Resend code
+                {resendBlocked ? `Resend in ${resendRemainingSeconds}s` : 'Resend code'}
               </Button>
               <Button type="button" variant="ghost" fullWidth onClick={handleTryAnotherEmail} disabled={isSubmitting}>
                 Use a different email

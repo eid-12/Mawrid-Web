@@ -6,6 +6,7 @@ import { CheckCircle, XCircle, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { toast } from 'sonner';
 import { formatApiError } from '../lib/userFacingError';
+import type { ApiError } from '../api/client';
 
 export default function Verification() {
   const RESEND_COOLDOWN_SECONDS = 60;
@@ -121,6 +122,8 @@ export default function Verification() {
       setTimeout(() => otpInputRef.current?.focus(), 100);
       setTimeout(() => setResent(false), 3000);
     } catch (e: unknown) {
+      const err = e as ApiError;
+      if (err?.status === 429) startResendCooldown(email);
       setOtpError(formatApiError(e, 'Failed to resend the code. Please try again.'));
     }
   };
@@ -151,7 +154,7 @@ export default function Verification() {
                   </div>
                 )}
                 <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
-                  We sent a 6-digit code to <strong>{email}</strong>
+                  We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.
                 </p>
                 <div>
                   <label className="block text-sm font-medium text-[#334155] dark:text-[#E2E8F0] mb-1.5">Verification Code</label>
@@ -278,6 +281,8 @@ export default function Verification() {
                       toast.success('Verification code sent!');
                       navigate(`/verify-email?email=${encodeURIComponent(val)}`);
                     } catch (err) {
+                      const e = err as ApiError;
+                      if (e?.status === 429) startResendCooldown(val);
                       setOtpError(formatApiError(err, 'Failed to send code'));
                     }
                   }}

@@ -155,6 +155,11 @@ export default function Signup() {
         email: formData.email,
         password: formData.password,
       });
+      const normalizedEmail = formData.email.trim().toLowerCase();
+      window.localStorage.setItem(
+        `verification_resend_until_${normalizedEmail}`,
+        String(Date.now() + 60_000)
+      );
       navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (e: unknown) {
       const message = formatApiError(e, 'Signup failed. Please try again.');

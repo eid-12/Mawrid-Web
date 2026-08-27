@@ -22,7 +22,8 @@ Default port: **8080**.
 
 | Service | Responsibility |
 |---------|----------------|
-| `AuthService` | Login, JWT, refresh rotation, OTP, profile, password |
+| `AuthService` | Login, JWT, refresh rotation, OTP verify, profile, password |
+| `AuthEmailTransactionService` | Row lock + 60s send slot + OTP persist before SMTP |
 | `UserRegistrationTransactionService` | Signup transaction; forces public role `USER` |
 | `UserService` | Super-admin user CRUD |
 | `TenantService` | Colleges, settings, deactivate, delete cascade |
