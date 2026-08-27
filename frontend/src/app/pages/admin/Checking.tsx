@@ -180,7 +180,19 @@ export default function Checking() {
     try {
       const result = await api.post<ScanResult>(`/api/tenants/${tenantId}/check-transactions/scan`, { serialNo: scanInput.trim() });
       setSelectedItem(result);
+      setSelectedCheckoutUnitId(result.equipmentUnitId ?? null);
+      setAvailableUnits([]);
+      setReturnUnitStatus('AVAILABLE');
       setScanInput('');
+      if (result.action === 'CHECK_OUT' && result.requestId) {
+        try {
+          const units = await api.get<EquipmentUnitOption[]>(`/api/tenants/${tenantId}/check-transactions/requests/${result.requestId}/available-units`);
+          setAvailableUnits(units);
+          if (!result.equipmentUnitId && units.length === 1) setSelectedCheckoutUnitId(units[0].id);
+        } catch {
+          setAvailableUnits([]);
+        }
+      }
     } catch (e: unknown) {
       setToastMessage((e as { message?: string })?.message ?? 'Item not found. Please check the serial number.');
       setToastVariant('warning');

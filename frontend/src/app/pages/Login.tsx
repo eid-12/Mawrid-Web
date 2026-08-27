@@ -68,7 +68,14 @@ export default function Login() {
         .toUpperCase()
         .replace(/^ROLE_/, '');
       console.log('Resolved login role:', normalizedRole);
-      if (normalizedRole === 'SUPER_ADMIN') {
+      const from = (location.state as { from?: string } | null)?.from;
+      const sameRolePath =
+        (normalizedRole === 'SUPER_ADMIN' && (from?.startsWith('/superadmin') || from?.startsWith('/super-admin'))) ||
+        (normalizedRole === 'ADMIN' && from?.startsWith('/admin')) ||
+        (normalizedRole === 'USER' && from?.startsWith('/user'));
+      if (from && from.startsWith('/') && !from.startsWith('//') && sameRolePath) {
+        navigate(from);
+      } else if (normalizedRole === 'SUPER_ADMIN') {
         navigate('/superadmin/dashboard');
       } else if (normalizedRole === 'ADMIN') {
         navigate('/admin/dashboard');

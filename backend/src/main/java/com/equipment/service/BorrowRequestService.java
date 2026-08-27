@@ -37,6 +37,7 @@ public class BorrowRequestService {
     private static final String COLLEGE_REMOVED_MESSAGE =
             "Access Denied: Your college has been permanently removed from the system.";
     private static final int MAX_ACTIVE_ITEMS_PER_USER = 3;
+    private static final List<String> CAPACITY_HOLDING_STATUSES = List.of("PENDING", "APPROVED");
     private static final List<String> DUPLICATE_BLOCKING_STATUSES = List.of("PENDING", "APPROVED", "BORROWED", "ON_LOAN");
     private static final List<String> ACTIVE_ITEM_LIMIT_STATUSES = List.of("APPROVED", "BORROWED", "ON_LOAN");
     private static final List<String> OVERDUE_BLOCKING_STATUSES = List.of("BORROWED", "ON_LOAN");
@@ -57,9 +58,7 @@ public class BorrowRequestService {
         Equipment equipment = equipmentRepository.findById(dto.getEquipmentId())
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + dto.getEquipmentId()));
         ensureTenantIsActive(tenant);
-        if (equipment.getAvailableQuantity() < 1) {
-            throw new IllegalArgumentException("No available units for this equipment");
-        }
+        ensureCapacityAvailable(equipment);
         if (!Boolean.TRUE.equals(user.getEmailVerified())) {
             throw new IllegalArgumentException("Please verify your email before requesting equipment");
         }
@@ -104,9 +103,7 @@ public class BorrowRequestService {
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + dto.getEquipmentId()));
         Tenant tenant = equipment.getTenant();
         ensureTenantIsActive(tenant);
-        if (equipment.getAvailableQuantity() < 1) {
-            throw new IllegalArgumentException("No available units for this equipment");
-        }
+        ensureCapacityAvailable(equipment);
         if (!Boolean.TRUE.equals(user.getEmailVerified())) {
             throw new IllegalArgumentException("Please verify your email before requesting equipment");
         }
@@ -196,6 +193,7 @@ public class BorrowRequestService {
         if (!"PENDING".equals(req.getStatus())) {
             throw new IllegalArgumentException("Request is not pending");
         }
+        ensureCapacityForApprove(req.getEquipment());
         req.setStatus("APPROVED");
         req.setDecisionReason(dto.getDecisionReason());
         req.setDecidedByAdminId(dto.getDecidedByAdminId());
@@ -237,7 +235,38 @@ public class BorrowRequestService {
         return toDto(req);
     }
 
+    private void ensureCapacityAvailable(Equipment equipment) {
+        if (equipment == null) {
+            throw new IllegalArgumentException("Equipment not found");
+        }
+        int available = equipment.getAvailableQuantity() == null ? 0 : equipment.getAvailableQuantity();
+        if (available < 1) {
+            throw new IllegalArgumentException("No available units for this equipment");
+        }
+        long held = borrowRequestRepository.countByEquipmentIdAndStatusIn(equipment.getId(), CAPACITY_HOLDING_STATUSES);
+        if (available - held < 1) {
+            throw new IllegalArgumentException("All remaining units are already reserved. Please choose another item or date.");
+        }
+    }
+
+    private void ensureCapacityForApprove(Equipment equipment) {
+        if (equipment == null) {
+            throw new IllegalArgumentException("Equipment not found");
+        }
+        int available = equipment.getAvailableQuantity() == null ? 0 : equipment.getAvailableQuantity();
+        if (available < 1) {
+            throw new IllegalArgumentException("No available units for this equipment");
+        }
+        long approvedHolds = borrowRequestRepository.countByEquipmentIdAndStatusIn(equipment.getId(), List.of("APPROVED"));
+        if (available - approvedHolds < 1) {
+            throw new IllegalArgumentException("No available units left to approve this request.");
+        }
+    }
+
     private void validateEquipmentAvailability(Equipment equipment, LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && startDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("Start date cannot be in the past");
+        }
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("End date must be the same as or after start date");
         }

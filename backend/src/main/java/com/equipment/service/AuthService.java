@@ -298,9 +298,10 @@ public class AuthService {
     public void forgotPassword(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (Boolean.TRUE.equals(user.getEmailVerified()) && !Boolean.TRUE.equals(user.getIsActive())) {
+            throw new AccountInactiveException();
+        }
         enforceEmailCooldown(user);
-        user.setIsActive(true);
-        userRepository.save(user);
         userTokenRepository.deleteByUserIdAndTokenType(user.getId(), TOKEN_TYPE_PASSWORD_RESET_OTP);
         String otp = CryptoUtil.randomOtp6();
         String hash = CryptoUtil.sha256Hex(otp);
@@ -311,12 +312,8 @@ public class AuthService {
                 .expiresAt(Instant.now().plusSeconds(otpTtlSeconds))
                 .build();
         userTokenRepository.save(t);
-        try {
-            emailService.sendOtpEmailBlocking(user.getEmail(), otp);
-            markEmailSentNow(user);
-        } catch (RuntimeException ex) {
-            log.warn("Forgot-password OTP email failed for {}: {}", user.getEmail(), ex.getMessage());
-        }
+        emailService.sendOtpEmailBlocking(user.getEmail(), otp);
+        markEmailSentNow(user);
     }
 
     @Transactional
@@ -333,23 +330,13 @@ public class AuthService {
             throw new IllegalArgumentException("Code has expired");
         }
         String tempPassword = CryptoUtil.randomPassword(10);
+        emailService.sendTemporaryPasswordEmailBlocking(user.getEmail(), user.getName(), tempPassword);
         user.setPasswordHash(passwordEncoder.encode(tempPassword));
         user.setPasswordChangedAt(Instant.now());
-        user.setIsActive(true);
-        user.setEmailVerified(true);
-        if (user.getEmailVerifiedAt() == null) {
-            user.setEmailVerifiedAt(Instant.now());
-        }
         userRepository.save(user);
         legacyUserColumnSyncService.syncAfterUserPersist(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
-        try {
-            emailService.sendTemporaryPasswordEmailBlocking(user.getEmail(), user.getName(), tempPassword);
-        } catch (RuntimeException ex) {
-            // Keep account activation/password reset persisted even if mail provider is temporarily unavailable.
-            log.warn("Temporary password email failed for user {}: {}", user.getEmail(), ex.getMessage());
-        }
     }
 
     @Transactional

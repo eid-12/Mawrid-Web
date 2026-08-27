@@ -25,6 +25,8 @@ export default function Signup() {
   const navigate = useNavigate();
   const { register } = useAuth();
   const [colleges, setColleges] = useState<TenantOption[]>([]);
+  const [collegesLoading, setCollegesLoading] = useState(true);
+  const [collegesError, setCollegesError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -40,10 +42,20 @@ export default function Signup() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  useEffect(() => {
+  const loadColleges = () => {
+    setCollegesLoading(true);
+    setCollegesError(null);
     api.get<Array<{ id: number; name: string; status: string }>>('/api/tenants/public/active')
       .then(setColleges)
-      .catch(() => {});
+      .catch(() => {
+        setColleges([]);
+        setCollegesError('Could not load colleges. Please try again.');
+      })
+      .finally(() => setCollegesLoading(false));
+  };
+
+  useEffect(() => {
+    loadColleges();
   }, []);
   
   const calculatePasswordStrength = (password: string) => {
@@ -206,7 +218,9 @@ export default function Signup() {
                     }}
                     className={`w-full h-12 pl-12 pr-4 bg-white dark:bg-[#0f172a] border rounded-2xl transition-all duration-200 text-[#334155] dark:text-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#8393DE]/50 ${errors.college ? 'border-red-500' : 'border-[#E2E8F0] dark:border-[#334155] hover:border-[#8393DE]/30'}`}
                   >
-                    <option value="">Select your college</option>
+                    <option value="">
+                      {collegesLoading ? 'Loading colleges...' : 'Select your college'}
+                    </option>
                     {colleges.map((college) => (
                       <option key={college.id} value={college.id}>
                         {college.name}
@@ -214,6 +228,14 @@ export default function Signup() {
                     ))}
                   </select>
                 </div>
+                {collegesError && (
+                  <p className="mt-1.5 text-sm text-red-600">
+                    {collegesError}{' '}
+                    <button type="button" className="underline" onClick={loadColleges}>
+                      Retry
+                    </button>
+                  </p>
+                )}
                 {errors.college && (
                   <p className="mt-1.5 text-sm text-red-600">{errors.college}</p>
                 )}
@@ -334,7 +356,7 @@ export default function Signup() {
                 <p className="mb-4 text-sm text-red-600">{errors.terms}</p>
               )}
               
-              <Button type="submit" fullWidth icon={ArrowRight} iconPosition="right" disabled={isSubmitting}>
+              <Button type="submit" fullWidth icon={ArrowRight} iconPosition="right" disabled={isSubmitting || collegesLoading || Boolean(collegesError)}>
                 {isSubmitting ? 'Creating...' : 'Create Account'}
               </Button>
             </div>

@@ -9,6 +9,7 @@ import { SuccessToast } from '../../components/SuccessToast';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../api/client';
 import { useAdminLiveData, useAdminTenantState } from '../../hooks/useAdminLiveData';
+import { inclusiveDurationDays, formatDisplayDate } from '../../lib/dateUtils';
 
 type RequestDto = {
   id: number;
@@ -185,8 +186,11 @@ export default function Requests() {
   const statusVariant = (s: string) => {
     const lower = s.toLowerCase();
     if (lower === 'pending') return 'pending';
-    if (lower === 'approved' || lower === 'on_loan') return 'success';
-    return 'error';
+    if (lower === 'approved') return 'success';
+    if (lower === 'on_loan' || lower === 'borrowed' || lower === 'delivered') return 'info';
+    if (lower === 'returned' || lower === 'cancelled') return 'neutral';
+    if (lower === 'rejected') return 'error';
+    return 'neutral';
   };
 
   const statusLabel = (s: string) => {
@@ -199,12 +203,9 @@ export default function Requests() {
       .join(' ');
   };
 
-  const durationDays = (start: string, end: string) => {
-    const diff = new Date(end).getTime() - new Date(start).getTime();
-    return Math.round(diff / (1000 * 60 * 60 * 24));
-  };
+  const durationDays = (start: string, end: string) => inclusiveDurationDays(start, end);
 
-  const formatDate = (d?: string) => (d ? new Date(d).toISOString().slice(0, 10) : '—');
+  const formatDate = (d?: string) => formatDisplayDate(d);
   const notePreview = (note?: string) => (note && note.trim() ? note.trim() : '—');
   const compactReasonPreview = (note?: string) => {
     const normalized = notePreview(note);

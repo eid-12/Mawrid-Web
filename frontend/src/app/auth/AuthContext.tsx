@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { api, ApiError, getAccessToken, setAccessToken } from "../api/client";
+import { api, ApiError, AUTH_EXPIRED_EVENT, getAccessToken, setAccessToken } from "../api/client";
 
 export type Role = "USER" | "ADMIN" | "SUPER_ADMIN";
 
@@ -242,6 +242,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     void hydrate();
+  }, []);
+
+  React.useEffect(() => {
+    const onExpired = () => {
+      setUser(null);
+      persistUser(null);
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
   }, []);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

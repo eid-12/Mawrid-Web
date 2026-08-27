@@ -5,6 +5,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Verification from "./pages/Verification";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./auth/RequireAuth";
@@ -38,7 +39,7 @@ export const router = createBrowserRouter([
   { path: "/login", Component: Login },
   { path: "/signup", Component: Signup },
   { path: "/forgot-password", Component: ForgotPassword },
-  { path: "/reset-password", Component: ForgotPassword },
+  { path: "/reset-password", Component: ResetPassword },
   { path: "/verification", Component: Verification },
   { path: "/verify-email", Component: Verification },
   {

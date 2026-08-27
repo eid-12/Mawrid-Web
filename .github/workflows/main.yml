@@ -23,6 +23,8 @@ jobs:
           context: ./frontend
           push: true
           tags: minipcer/mawrid-frontend:latest
+          build-args: |
+            VITE_API_BASE_URL=/api
 
       - name: Build and Push Backend
         uses: docker/build-push-action@v5

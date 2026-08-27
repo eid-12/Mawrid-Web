@@ -27,7 +27,7 @@ services:
       mysql-server:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-server:3306/mapping_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-server:3306/mapping_db?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       FRONTEND_URL: http://localhost:3000
@@ -39,6 +39,8 @@ services:
   mawrid-frontend:
     build:
       context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api
     container_name: mawrid-frontend
     restart: unless-stopped
     depends_on:

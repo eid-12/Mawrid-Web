@@ -9,6 +9,8 @@ import { api } from '../../api/client';
 import { SuccessToast } from '../../components/SuccessToast';
 import { useCollegeEligibility } from '../../hooks/useCollegeEligibility';
 import { getEquipmentIcon } from '../../lib/equipmentIconMapper';
+import { addDaysToIsoDate, formatDisplayDate, inclusiveDurationDays, localIsoDate } from '../../lib/dateUtils';
+import { useNavigate } from 'react-router';
 
 type EquipmentItem = {
   id: number;
@@ -35,6 +37,7 @@ type TenantSettings = {
 
 export default function Catalog() {
   const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+  const navigate = useNavigate();
   const { user, refreshUserStatus } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCollege, setSelectedCollege] = useState('all');
@@ -43,6 +46,7 @@ export default function Catalog() {
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [items, setItems] = useState<EquipmentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [requestModal, setRequestModal] = useState<EquipmentItem | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -64,11 +68,20 @@ export default function Catalog() {
     void refreshUserStatus();
   }, [user?.userId]);
 
-  useEffect(() => {
+  const loadCatalog = () => {
+    setLoading(true);
+    setLoadError(null);
     api.get<EquipmentItem[]>('/api/catalog/equipment')
       .then(setItems)
-      .catch(() => setItems([]))
+      .catch((err: { message?: string }) => {
+        setItems([]);
+        setLoadError(err?.message ?? 'Failed to load equipment.');
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadCatalog();
   }, []);
 
   useEffect(() => {
@@ -82,7 +95,7 @@ export default function Catalog() {
       .catch(() => setTenantStatus(null));
   }, [user?.tenantId]);
 
-  const today = () => new Date().toISOString().split('T')[0];
+  const today = () => localIsoDate();
 
   const getStatus = (item: EquipmentItem): string => {
     const normalizedStatus = (item.status ?? '').trim().toUpperCase();
@@ -126,12 +139,7 @@ export default function Catalog() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [items]);
 
-  const formatDisplayDate = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  };
-
-  const getMinStartDate = () => new Date().toISOString().split('T')[0];
+  const getMinStartDate = () => localIsoDate();
 
   const getRequestModalDateConstraints = () => {
     if (!requestModal) return { minStart: getMinStartDate(), maxEnd: '' };
@@ -144,9 +152,7 @@ export default function Catalog() {
       ? requestModal.maxBorrowDays
       : (tenantSettings?.maxBorrowDays && tenantSettings.maxBorrowDays > 0 ? tenantSettings.maxBorrowDays : null);
     if (effectiveMaxBorrowDays) {
-      const maxByRule = new Date(effectiveStart);
-      maxByRule.setDate(maxByRule.getDate() + effectiveMaxBorrowDays - 1);
-      const maxByRuleIso = maxByRule.toISOString().split('T')[0];
+      const maxByRuleIso = addDaysToIsoDate(effectiveStart, effectiveMaxBorrowDays - 1);
       maxEnd = maxEnd ? (maxEnd < maxByRuleIso ? maxEnd : maxByRuleIso) : maxByRuleIso;
     }
     return { minStart, maxEnd };
@@ -185,7 +191,7 @@ export default function Catalog() {
       setToastMessage('Request submitted successfully!');
       setToastVariant('success');
       setShowToast(true);
-      api.get<EquipmentItem[]>('/api/catalog/equipment').then(setItems);
+      loadCatalog();
     } catch (err: unknown) {
       setToastMessage((err as { message?: string })?.message ?? 'Failed to submit request');
       setToastVariant('cancel');
@@ -231,11 +237,7 @@ export default function Catalog() {
 
   const getBorrowDays = () => {
     if (!startDate || !endDate) return 0;
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
-    const dayMs = 24 * 60 * 60 * 1000;
-    return Math.floor((end.getTime() - start.getTime()) / dayMs) + 1;
+    return inclusiveDurationDays(startDate, endDate);
   };
 
   const validateRequestWithTenantSettings = () => {
@@ -371,6 +373,11 @@ export default function Catalog() {
       {/* Items Grid */}
       {loading ? (
         <Card className="py-12 text-center text-muted-foreground">Loading...</Card>
+      ) : loadError ? (
+        <Card className="py-12 text-center space-y-4">
+          <p className="text-muted-foreground">{loadError}</p>
+          <Button variant="secondary" onClick={loadCatalog}>Retry</Button>
+        </Card>
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedItems.map((item) => {
@@ -386,8 +393,8 @@ export default function Catalog() {
                 key={item.id}
                 hover
                 padding="none"
-                className={`h-full overflow-hidden ${requestable ? 'cursor-pointer' : ''} ${item.recommended ? 'ring-1 ring-blue-300/80 dark:ring-blue-500/50 shadow-[0_0_0_1px_rgba(59,130,246,0.20)]' : ''}`}
-                onClick={() => requestable && openRequestModal(item)}
+                className={`h-full overflow-hidden cursor-pointer ${item.recommended ? 'ring-1 ring-blue-300/80 dark:ring-blue-500/50 shadow-[0_0_0_1px_rgba(59,130,246,0.20)]' : ''}`}
+                onClick={() => navigate(`/user/catalog/${item.id}`)}
               >
                 <div className="aspect-video bg-gradient-to-br from-[#F9FCFE] via-background to-[#F9FAFD] dark:from-[#2D3748] dark:via-background dark:to-[#374151] flex items-center justify-center border-b border-border">
                   <ItemIcon className="w-12 h-12 text-slate-600 dark:text-sky-300" />
@@ -504,7 +511,7 @@ export default function Catalog() {
         </div>
       )}
 
-      {!loading && filteredItems.length === 0 && (
+      {!loading && !loadError && filteredItems.length === 0 && (
         <Card className="py-12 text-center text-muted-foreground">No equipment found</Card>
       )}
 

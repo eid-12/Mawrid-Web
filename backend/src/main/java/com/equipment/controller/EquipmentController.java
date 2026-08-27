@@ -54,6 +54,11 @@ public class EquipmentController {
         return ResponseEntity.ok(equipmentService.getCatalogForUser(userId, userTenantId));
     }
 
+    @GetMapping("/catalog/equipment/{id}")
+    public ResponseEntity<EquipmentDto> getCatalogItem(@PathVariable Long id) {
+        return ResponseEntity.ok(equipmentService.getEquipmentById(id));
+    }
+
     @GetMapping("/tenants/{tenantId}/equipment")
     public ResponseEntity<List<EquipmentDto>> listEquipment(@PathVariable Long tenantId) {
         TenantAccess.requireTenant(tenantId);

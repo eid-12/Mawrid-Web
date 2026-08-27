@@ -65,15 +65,15 @@ export default function UserDashboard() {
 
   const now = new Date();
   const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+  const statusOf = (status: string) => (status || '').toUpperCase();
+  const isOnLoan = (status: string) => ['ON_LOAN', 'BORROWED', 'DELIVERED'].includes(statusOf(status));
 
-  const activeBorrows = requests.filter(
-    (r) => r.status === 'APPROVED' || r.status === 'DELIVERED' || r.status === 'delivered'
-  ).length;
-  const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
-  const approvedCount = requests.filter((r) => r.status === 'APPROVED' || r.status === 'delivered').length;
+  const activeBorrows = requests.filter((r) => isOnLoan(r.status)).length;
+  const pendingCount = requests.filter((r) => statusOf(r.status) === 'PENDING').length;
+  const approvedCount = requests.filter((r) => statusOf(r.status) === 'APPROVED').length;
   const dueSoonCount = requests.filter((r) => {
-    if (r.status !== 'APPROVED' && r.status !== 'DELIVERED' && r.status !== 'delivered') return false;
-    const end = new Date(r.endDate);
+    if (!isOnLoan(r.status)) return false;
+    const end = new Date(`${r.endDate}T00:00:00`);
     return end >= now && end <= in48h;
   }).length;
 
@@ -85,19 +85,19 @@ export default function UserDashboard() {
   ];
 
   const notifications = requests
-    .filter((r) => r.status === 'APPROVED' || r.status === 'REJECTED' || r.status === 'rejected')
+    .filter((r) => ['APPROVED', 'REJECTED'].includes(statusOf(r.status)))
     .slice(0, 5)
     .map((r) => {
       const name = r.equipmentName || 'Equipment';
-      if (r.status === 'APPROVED')
+      if (statusOf(r.status) === 'APPROVED')
         return { id: r.id, type: 'success' as const, message: `Your request for ${name} has been approved`, time: formatTimeAgo(r.createdAt) };
       return { id: r.id, type: 'error' as const, message: `Your request for ${name} has been rejected`, time: formatTimeAgo(r.createdAt) };
     })
     .concat(
       requests
         .filter((r) => {
-          if (r.status !== 'APPROVED' && r.status !== 'DELIVERED' && r.status !== 'delivered') return false;
-          const end = new Date(r.endDate);
+          if (!isOnLoan(r.status)) return false;
+          const end = new Date(`${r.endDate}T00:00:00`);
           return end >= now && end <= in48h;
         })
         .map((r) => ({
@@ -116,14 +116,14 @@ export default function UserDashboard() {
     })
     .slice(0, 6);
 
-  const recentRequests = requests
+  const recentRequests = [...requests]
     .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
     .slice(0, 3);
 
   const getStatusVariant = (status: string) => {
     const s = (status || '').toLowerCase();
     if (s === 'approved') return 'success';
-    if (s === 'delivered') return 'info';
+    if (s === 'delivered' || s === 'on_loan' || s === 'borrowed') return 'info';
     if (s === 'pending') return 'pending';
     if (s === 'rejected' || s === 'cancelled') return 'error';
     return 'neutral';
@@ -241,7 +241,9 @@ export default function UserDashboard() {
                         <p className="text-xs text-muted-foreground">Return: {formatDate(request.endDate)}</p>
                       </div>
                       <Badge variant={getStatusVariant(request.status)} size="sm">
-                        {request.status.toLowerCase()}
+                        {statusOf(request.status) === 'ON_LOAN' || statusOf(request.status) === 'BORROWED'
+                          ? 'borrowed'
+                          : request.status.toLowerCase()}
                       </Badge>
                     </div>
                   ))}

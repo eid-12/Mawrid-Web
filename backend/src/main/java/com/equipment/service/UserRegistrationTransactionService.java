@@ -68,7 +68,7 @@ public class UserRegistrationTransactionService {
 
         User user = User.builder()
                 .tenant(tenant)
-                .role(request.getRole() == null ? UserRole.USER : request.getRole())
+                .role(UserRole.USER)
                 .name(normalizedName)
                 .email(request.getEmail())
                 .phone(request.getPhone())

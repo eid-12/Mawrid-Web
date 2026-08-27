@@ -48,7 +48,13 @@ export function RequireActiveAdminCollege() {
     };
   }, [location.pathname, user?.tenantId]);
 
-  if (checking) return null;
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Checking college access...</p>
+      </div>
+    );
+  }
   if (!hasTenant) {
     return <Navigate to={`/login?error=${encodeURIComponent("Please contact the administrator.")}`} replace />;
   }

@@ -95,7 +95,7 @@ export default function MyRequests() {
     if (s === 'approved') return 'success';
     if (s === 'pending') return 'pending';
     if (s === 'rejected' || s === 'cancelled') return 'error';
-    if (s === 'delivered') return 'info';
+    if (s === 'delivered' || s === 'on_loan' || s === 'borrowed') return 'info';
     if (s === 'returned') return 'neutral';
     return 'neutral';
   };

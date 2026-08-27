@@ -75,7 +75,7 @@ export default function Landing() {
             Browse, request, and track equipment with ease.
           </p>
           <div className="flex items-center justify-center gap-3 md:gap-4 flex-wrap">
-            <Button icon={ArrowRight} iconPosition="right" size="lg" onClick={() => navigate('/login')}>
+            <Button icon={ArrowRight} iconPosition="right" size="lg" onClick={() => navigate('/signup')}>
               Join now
             </Button>
             <Button variant="secondary" size="lg" onClick={() => navigate('/login')}>

@@ -5,6 +5,9 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # السطر السحري: إعطاء صلاحية التنفيذ لمجلد node_modules
 RUN chmod -R +x node_modules/.bin
 

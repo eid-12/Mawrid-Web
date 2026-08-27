@@ -49,6 +49,16 @@ function buildApiUrl(path: string): string {
   return `${baseUrl}${normalizedPath}`;
 }
 
+export const AUTH_EXPIRED_EVENT = "mawrid:auth-expired";
+const AUTH_USER_STORAGE_KEY = "mawrid_auth_user";
+
+function clearAuthSession() {
+  setAccessToken(null);
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+}
+
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set("Content-Type", headers.get("Content-Type") ?? "application/json");
@@ -60,10 +70,11 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
     credentials: "include",
   });
 
-  if (res.status === 401 && retry) {
-    // Try refresh once, then retry original request
+  const skipRefresh = /\/api\/auth\/(login|register|forgot-password|verify-|resend-verification|reset-password)/.test(path);
+  if (res.status === 401 && retry && !skipRefresh) {
     const refreshed = await tryRefresh();
     if (refreshed) return request<T>(path, init, false);
+    clearAuthSession();
   }
 
   if (!res.ok) {
@@ -94,12 +105,16 @@ async function tryRefresh(): Promise<boolean> {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      clearAuthSession();
+      return false;
+    }
     const data = (await res.json()) as { accessToken: string };
     if (!data?.accessToken) return false;
     setAccessToken(data.accessToken);
     return true;
   } catch {
+    clearAuthSession();
     return false;
   }
 }

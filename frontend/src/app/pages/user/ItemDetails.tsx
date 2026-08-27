@@ -1,191 +1,322 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Badge } from '../../components/Badge';
-import { ArrowLeft, Calendar, Package, ShoppingCart, Laptop } from 'lucide-react';
+import { ArrowLeft, Calendar } from 'lucide-react';
 import { Input } from '../../components/Input';
 import { SuccessToast } from '../../components/SuccessToast';
+import { useAuth } from '../../auth/AuthContext';
+import { api } from '../../api/client';
+import { useCollegeEligibility } from '../../hooks/useCollegeEligibility';
+import { getEquipmentIcon } from '../../lib/equipmentIconMapper';
+import { addDaysToIsoDate, formatDisplayDate, inclusiveDurationDays, localIsoDate } from '../../lib/dateUtils';
+
+type EquipmentItem = {
+  id: number;
+  tenantId: number;
+  tenantName?: string | null;
+  name: string;
+  category: string;
+  description?: string | null;
+  totalQuantity: number;
+  availableQuantity: number;
+  status?: string | null;
+  availableFrom?: string | null;
+  availableTo?: string | null;
+  maxBorrowDays?: number | null;
+};
+
+type TenantSettings = {
+  tenantId: number;
+  maxBorrowDays?: number | null;
+};
 
 export default function ItemDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
+  const { canAccessCoreFeatures } = useCollegeEligibility();
+  const [item, setItem] = useState<EquipmentItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestNote, setRequestNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const [tenantSettings, setTenantSettings] = useState<TenantSettings | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  
-  // Mock item data
-  const item = {
-    id: 1,
-    name: 'MacBook Pro 16"',
-    category: 'Computers',
-    status: 'available',
-    condition: 'Excellent',
-    image: 'laptop',
-    description: 'High-performance laptop for development, design, and media production. Equipped with the latest M3 Max chip for exceptional performance.',
-    specs: {
-      processor: 'Apple M3 Max',
-      memory: '32GB Unified RAM',
-      storage: '1TB SSD',
-      display: '16.2" Liquid Retina XDR',
-      graphics: '30-core GPU',
-      battery: 'Up to 18 hours',
-    },
-    serialNumber: 'MPB-2024-001',
-    purchaseDate: '2024-01-15',
-    location: 'Engineering Building - Room 301',
+  const [toastVariant, setToastVariant] = useState<'success' | 'cancel'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+
+  const today = () => localIsoDate();
+
+  const loadItem = () => {
+    if (!id) return;
+    setLoading(true);
+    setLoadError(null);
+    api
+      .get<EquipmentItem>(`/api/catalog/equipment/${id}`)
+      .then((data) => {
+        setItem(data);
+        const minStart =
+          data.availableFrom && data.availableFrom > today() ? data.availableFrom : today();
+        setStartDate(minStart);
+        setEndDate('');
+        if (data.tenantId) {
+          api
+            .get<TenantSettings>(`/api/tenants/${data.tenantId}/settings`)
+            .then(setTenantSettings)
+            .catch(() => setTenantSettings(null));
+        }
+      })
+      .catch((err: { message?: string }) => {
+        setItem(null);
+        setLoadError(err?.message ?? 'Failed to load this item.');
+      })
+      .finally(() => setLoading(false));
   };
-  
-  const similarItems = [
-    { id: 2, name: 'MacBook Pro 14"', status: 'available' },
-    { id: 3, name: 'Dell XPS 15', status: 'borrowed' },
-    { id: 4, name: 'ThinkPad X1 Carbon', status: 'available' },
-  ];
-  
-  const handleRequestSubmit = (e: React.FormEvent) => {
+
+  useEffect(() => {
+    loadItem();
+  }, [id]);
+
+  const getStatus = (eq: EquipmentItem): string => {
+    const normalizedStatus = (eq.status ?? '').trim().toUpperCase();
+    if (normalizedStatus === 'MAINTENANCE') return 'maintenance';
+    const now = today();
+    if (eq.availableFrom && now < eq.availableFrom) return 'unavailable';
+    if (eq.availableTo && now > eq.availableTo) return 'unavailable';
+    if (normalizedStatus === 'BORROWED' || normalizedStatus === 'ON_LOAN') return 'borrowed';
+    if (normalizedStatus === 'RETIRED') return 'unavailable';
+    if (eq.availableQuantity > 0) return 'available';
+    return 'unavailable';
+  };
+
+  const getUnavailabilityReason = (eq: EquipmentItem): string => {
+    const normalizedStatus = (eq.status ?? '').trim().toUpperCase();
+    if (normalizedStatus === 'MAINTENANCE') return 'In Maintenance';
+    if (normalizedStatus === 'RETIRED') return 'Retired';
+    const now = today();
+    if (eq.availableFrom && now < eq.availableFrom) return `Available from ${formatDisplayDate(eq.availableFrom)}`;
+    if (eq.availableTo && now > eq.availableTo) return 'No longer available';
+    if (normalizedStatus === 'BORROWED' || normalizedStatus === 'ON_LOAN') return 'Currently borrowed';
+    return eq.availableQuantity > 0 ? '' : 'Out of stock';
+  };
+
+  const getDateConstraints = () => {
+    if (!item) return { minStart: today(), maxEnd: '' };
+    const minStart =
+      item.availableFrom && item.availableFrom > today() ? item.availableFrom : today();
+    const effectiveStart = startDate || minStart;
+    let maxEnd = item.availableTo || '';
+    const effectiveMaxBorrowDays =
+      item.maxBorrowDays && item.maxBorrowDays > 0
+        ? item.maxBorrowDays
+        : tenantSettings?.maxBorrowDays && tenantSettings.maxBorrowDays > 0
+          ? tenantSettings.maxBorrowDays
+          : null;
+    if (effectiveMaxBorrowDays) {
+      const maxByRuleIso = addDaysToIsoDate(effectiveStart, effectiveMaxBorrowDays - 1);
+      maxEnd = maxEnd ? (maxEnd < maxByRuleIso ? maxEnd : maxByRuleIso) : maxByRuleIso;
+    }
+    return { minStart, maxEnd };
+  };
+
+  const validateRequest = () => {
+    if (!item) return 'Item not found.';
+    if (!canAccessCoreFeatures) {
+      return 'Action Required: Please select an active college in Settings to start borrowing equipment.';
+    }
+    if (!user?.emailVerified) return 'Please verify your email before borrowing equipment.';
+    if (!startDate || !endDate) return 'Please choose both start and end date.';
+    if (endDate < startDate) return 'End date must be after or same as start date.';
+    const effectiveMaxBorrowDays =
+      item.maxBorrowDays && item.maxBorrowDays > 0
+        ? item.maxBorrowDays
+        : tenantSettings?.maxBorrowDays && tenantSettings.maxBorrowDays > 0
+          ? tenantSettings.maxBorrowDays
+          : null;
+    if (effectiveMaxBorrowDays && inclusiveDurationDays(startDate, endDate) > effectiveMaxBorrowDays) {
+      return `Maximum borrow period for this item is ${effectiveMaxBorrowDays} days.`;
+    }
+    return '';
+  };
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowRequestForm(false);
-    setShowSuccessToast(true);
-    setTimeout(() => {
-      navigate('/user/requests');
-    }, 2200);
+    if (!item || !user?.userId) return;
+    const error = validateRequest();
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+    setValidationError('');
+    setSubmitting(true);
+    try {
+      await api.post(`/api/users/${user.userId}/borrow-requests`, {
+        equipmentId: item.id,
+        startDate,
+        endDate,
+        requestNote: requestNote.trim() || undefined,
+      });
+      setToastMessage('Request submitted successfully!');
+      setToastVariant('success');
+      setShowSuccessToast(true);
+      setTimeout(() => navigate('/user/requests'), 1600);
+    } catch (err: unknown) {
+      setToastMessage((err as { message?: string })?.message ?? 'Failed to submit request');
+      setToastVariant('cancel');
+      setShowSuccessToast(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
-  
+
+  if (loading) {
+    return <Card className="py-12 text-center text-muted-foreground">Loading item...</Card>;
+  }
+
+  if (!item) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/user/catalog')}>
+          Back to Catalog
+        </Button>
+        <Card className="py-12 text-center space-y-4">
+          <p className="text-muted-foreground">{loadError ?? 'Item not found.'}</p>
+          <Button variant="secondary" onClick={loadItem}>
+            Retry
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  const ItemIcon = getEquipmentIcon(item.name, item.category);
+  const status = getStatus(item);
+  const requestable = status === 'available' && canAccessCoreFeatures;
+  const unavailReason = status !== 'available' ? getUnavailabilityReason(item) : '';
+  const { minStart, maxEnd } = getDateConstraints();
+  const maxDays =
+    item.maxBorrowDays && item.maxBorrowDays > 0
+      ? item.maxBorrowDays
+      : tenantSettings?.maxBorrowDays && tenantSettings.maxBorrowDays > 0
+        ? tenantSettings.maxBorrowDays
+        : 7;
+
   return (
     <div className="space-y-6">
-      {/* Success Toast */}
       <SuccessToast
         isOpen={showSuccessToast}
-        message="Request submitted successfully!"
+        variant={toastVariant}
+        message={toastMessage}
         duration={2000}
         onClose={() => setShowSuccessToast(false)}
       />
-      
-      {/* Back Button */}
+
       <Button variant="ghost" icon={ArrowLeft} onClick={() => navigate('/user/catalog')}>
         Back to Catalog
       </Button>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Item Header */}
           <Card>
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex items-start justify-between mb-6 gap-4">
               <div>
-                <h1 className="text-3xl font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>{item.name}</h1>
-                <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-semibold mb-2" style={{ color: 'var(--text-heading)' }}>
+                  {item.name}
+                </h1>
+                <div className="flex items-center gap-3 flex-wrap">
                   <Badge variant="info" size="sm">{item.category}</Badge>
                   <Badge
-                    variant={item.status === 'available' ? 'success' : 'warning'}
+                    variant={
+                      status === 'available'
+                        ? 'success'
+                        : status === 'borrowed'
+                          ? 'warning'
+                          : status === 'maintenance'
+                            ? 'error'
+                            : 'neutral'
+                    }
                   >
-                    {item.status}
+                    {status === 'unavailable' ? unavailReason || 'Unavailable' : status}
                   </Badge>
+                  {item.tenantName ? (
+                    <Badge variant="neutral" size="sm">{item.tenantName}</Badge>
+                  ) : null}
                 </div>
               </div>
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#F9FCFE] to-[#F9FAFD] dark:from-[#2D3748] dark:to-[#374151] flex items-center justify-center border border-border">
-                <Laptop className="w-10 h-10 text-primary" />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#F9FCFE] to-[#F9FAFD] dark:from-[#2D3748] dark:to-[#374151] flex items-center justify-center border border-border shrink-0">
+                <ItemIcon className="w-10 h-10 text-primary" />
               </div>
             </div>
-            
-            <p className="text-foreground leading-relaxed mb-6">{item.description}</p>
-            
+
+            <p className="text-foreground leading-relaxed mb-6">
+              {item.description || 'No description provided for this equipment.'}
+            </p>
+
             <div className="grid grid-cols-2 gap-4">
-              {Object.entries(item.specs).map(([key, value]) => (
-                <div key={key} className="p-3 bg-background rounded-xl border border-border">
-                  <p className="text-xs text-muted-foreground mb-1 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>{value}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-          
-          {/* Additional Info */}
-          <Card>
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-heading)' }}>Additional Information</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-border">
-                <span className="text-sm text-muted-foreground">Serial Number</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>{item.serialNumber}</span>
+              <div className="p-3 bg-background rounded-xl border border-border">
+                <p className="text-xs text-muted-foreground mb-1">Available units</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>
+                  {item.availableQuantity} / {item.totalQuantity}
+                </p>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-border">
-                <span className="text-sm text-muted-foreground">Purchase Date</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>{item.purchaseDate}</span>
+              <div className="p-3 bg-background rounded-xl border border-border">
+                <p className="text-xs text-muted-foreground mb-1">Max borrow period</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>
+                  {maxDays} days
+                </p>
               </div>
-              <div className="flex items-center justify-between py-2 border-b border-border">
-                <span className="text-sm text-muted-foreground">Condition</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>{item.condition}</span>
+              <div className="p-3 bg-background rounded-xl border border-border">
+                <p className="text-xs text-muted-foreground mb-1">Available from</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>
+                  {formatDisplayDate(item.availableFrom)}
+                </p>
               </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-sm text-muted-foreground">Location</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>{item.location}</span>
+              <div className="p-3 bg-background rounded-xl border border-border">
+                <p className="text-xs text-muted-foreground mb-1">Available until</p>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>
+                  {formatDisplayDate(item.availableTo)}
+                </p>
               </div>
-            </div>
-          </Card>
-          
-          {/* Similar Items */}
-          <Card>
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-heading)' }}>Similar Items</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {similarItems.map((similar) => (
-                <button
-                  key={similar.id}
-                  onClick={() => navigate(`/user/catalog/${similar.id}`)}
-                  className="p-4 bg-background rounded-xl border border-border hover:border-primary/30 transition-all text-left"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <Package className="w-5 h-5 text-primary" />
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-heading)' }}>{similar.name}</p>
-                  </div>
-                  <Badge
-                    variant={similar.status === 'available' ? 'success' : 'warning'}
-                    size="sm"
-                  >
-                    {similar.status}
-                  </Badge>
-                </button>
-              ))}
             </div>
           </Card>
         </div>
-        
-        {/* Sidebar - Request Form */}
+
         <div>
           <Card className="sticky top-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
               <Calendar className="w-5 h-5" />
               Request to Borrow
             </h3>
-            
-            {!showRequestForm ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-sidebar-accent rounded-xl border border-border">
-                  <p className="text-sm text-foreground mb-2">
-                    This item is currently available and ready to be borrowed.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Fill in your borrowing dates to submit a request.
-                  </p>
-                </div>
-                <Button
-                  fullWidth
-                  icon={ShoppingCart}
-                  onClick={() => setShowRequestForm(true)}
-                  disabled={item.status !== 'available'}
-                >
-                  Request Borrow
-                </Button>
+
+            {!requestable ? (
+              <div className="p-4 bg-sidebar-accent rounded-xl border border-border">
+                <p className="text-sm text-foreground">
+                  {unavailReason ||
+                    (!canAccessCoreFeatures
+                      ? 'Select an active college in Settings before requesting equipment.'
+                      : 'This item cannot be requested right now.')}
+                </p>
               </div>
             ) : (
               <form onSubmit={handleRequestSubmit} noValidate className="space-y-4">
+                {!user?.emailVerified && (
+                  <p className="text-sm text-red-600">Verify your email first to submit borrowing requests.</p>
+                )}
                 <Input
                   type="date"
                   label="Start Date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    if (endDate && e.target.value && endDate < e.target.value) setEndDate('');
+                  }}
                   required
-                  min={new Date().toISOString().split('T')[0]}
+                  min={minStart}
                 />
                 <Input
                   type="date"
@@ -193,26 +324,25 @@ export default function ItemDetails() {
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required
-                  min={startDate || new Date().toISOString().split('T')[0]}
+                  min={startDate || minStart}
+                  max={maxEnd || undefined}
                 />
-                <div className="p-3 bg-sidebar-accent rounded-xl border border-border">
+                {maxEnd && (
                   <p className="text-xs text-muted-foreground">
-                    Your request will be reviewed by the college admin. You'll receive a notification once it's approved.
+                    This equipment is available until {formatDisplayDate(maxEnd)}.
                   </p>
-                </div>
-                <div className="space-y-2">
-                  <Button type="submit" fullWidth>
-                    Submit Request
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    fullWidth
-                    onClick={() => setShowRequestForm(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                )}
+                <textarea
+                  value={requestNote}
+                  onChange={(e) => setRequestNote(e.target.value)}
+                  rows={2}
+                  className="w-full px-4 py-3 bg-input-background border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="Note (optional)"
+                />
+                {validationError && <p className="text-sm text-red-600">{validationError}</p>}
+                <Button type="submit" fullWidth disabled={submitting || !user?.emailVerified}>
+                  {submitting ? 'Submitting...' : 'Submit Request'}
+                </Button>
               </form>
             )}
           </Card>

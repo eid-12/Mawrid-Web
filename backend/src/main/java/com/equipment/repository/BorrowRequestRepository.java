@@ -38,6 +38,8 @@ public interface BorrowRequestRepository extends JpaRepository<BorrowRequest, Lo
 
     boolean existsByUserIdAndEquipmentIdAndStatusIn(Long userId, Long equipmentId, List<String> statuses);
 
+    long countByEquipmentIdAndStatusIn(Long equipmentId, List<String> statuses);
+
     long countByUserIdAndStatusIn(Long userId, List<String> statuses);
 
     boolean existsByUserIdAndStatusInAndEndDateBefore(Long userId, List<String> statuses, LocalDate date);

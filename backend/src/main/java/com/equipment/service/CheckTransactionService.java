@@ -87,6 +87,13 @@ public class CheckTransactionService {
                     "approved"
             );
         } else if ("CHECK_IN".equals(action)) {
+            if (!"ON_LOAN".equalsIgnoreCase(borrowRequest.getStatus())
+                    && !"BORROWED".equalsIgnoreCase(borrowRequest.getStatus())) {
+                throw new IllegalArgumentException("Only items currently on loan can be returned");
+            }
+            if (borrowRequest.getEquipmentUnit() == null) {
+                throw new IllegalArgumentException("This request has no handed-over unit to return");
+            }
             String studentName = borrowRequest.getUser() != null ? borrowRequest.getUser().getName() : "Student";
             String equipmentName = borrowRequest.getEquipment() != null ? borrowRequest.getEquipment().getName() : "equipment";
             String serialNo = unit.getSerialNo() != null ? unit.getSerialNo() : ("UNIT-" + unit.getId());
@@ -254,19 +261,23 @@ public class CheckTransactionService {
                 .filter(r -> r.getEquipment().getId().equals(unit.getEquipment().getId()))
                 .filter(r -> r.getEquipmentUnit() == null)
                 .collect(Collectors.toList());
-        for (BorrowRequest req : approved) {
-            if ("AVAILABLE".equalsIgnoreCase(unit.getStatus())) {
-                return ScanResultDto.builder()
-                        .action("CHECK_OUT")
-                        .requestId(req.getId())
-                        .equipmentUnitId(unit.getId())
-                        .equipmentName(unit.getEquipment().getName())
-                        .serialNo(unit.getSerialNo())
-                        .userName(req.getUser().getName())
-                        .startDate(req.getStartDate())
-                        .endDate(req.getEndDate())
-                        .build();
-            }
+        if (approved.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Multiple approved requests exist for this equipment. Select the student from the pending checkout list."
+            );
+        }
+        if (approved.size() == 1 && "AVAILABLE".equalsIgnoreCase(unit.getStatus())) {
+            BorrowRequest req = approved.get(0);
+            return ScanResultDto.builder()
+                    .action("CHECK_OUT")
+                    .requestId(req.getId())
+                    .equipmentUnitId(unit.getId())
+                    .equipmentName(unit.getEquipment().getName())
+                    .serialNo(unit.getSerialNo())
+                    .userName(req.getUser().getName())
+                    .startDate(req.getStartDate())
+                    .endDate(req.getEndDate())
+                    .build();
         }
         throw new IllegalArgumentException("No pending checkout or return found for this item.");
     }
