@@ -73,6 +73,7 @@ Main files:
 
 ## Related Docs
 
+- Full system docs: [`../docs/README.md`](../docs/README.md)
 - Project root: [`../README.md`](../README.md)
 - Backend API: [`../backend/README.md`](../backend/README.md)
   

@@ -92,5 +92,6 @@ Generated artifact:
 
 ## Related Docs
 
+- Full system docs: [`../docs/README.md`](../docs/README.md)
 - Project root: [`../README.md`](../README.md)
 - Frontend guide: [`../frontend/README.md`](../frontend/README.md)

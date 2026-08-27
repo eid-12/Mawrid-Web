@@ -62,10 +62,16 @@ Important:
 - Keep secrets in environment variables, not hardcoded values.
 - If you deploy with same-domain strategy, keep frontend API base URL as `/api` and use Nginx reverse proxy.
 
-## Documentation by Section
+## Documentation
 
-- Frontend guide: [`frontend/README.md`](frontend/README.md)
-- Backend guide: [`backend/README.md`](backend/README.md)
+Full system docs (architecture, roles, API, database, security, deploy):
+
+- **[`docs/README.md`](docs/README.md)** — index of all documents
+
+Short per-package guides:
+
+- Frontend: [`frontend/README.md`](frontend/README.md)
+- Backend: [`backend/README.md`](backend/README.md)
 
 ## Tech Stack
 
