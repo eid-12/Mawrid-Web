@@ -20,10 +20,10 @@ public final class AuthDtos {
     @AllArgsConstructor
     @Builder
     public static class RegisterRequest {
-        private Long tenantId; // nullable for SUPER_ADMIN-only accounts
+        private Long tenantId; // required for public signup; super-admin accounts are created elsewhere
 
         @NotNull
-        private UserRole role; // USER, ADMIN, SUPER_ADMIN
+        private UserRole role; // required by the API contract; public signup always persists USER
 
         @NotBlank
         private String name;

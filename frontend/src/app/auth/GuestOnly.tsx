@@ -2,7 +2,7 @@ import { Navigate, Outlet } from "react-router";
 import { getAccessToken, reloadAccessTokenFromStorage } from "../api/client";
 import { dashboardPathForRole, useAuth } from "./AuthContext";
 
-/** Public auth/marketing pages: bounce an existing session away from login/signup. */
+/** Public pages: if a live session exists, skip login/signup and go to the role dashboard. */
 export function GuestOnly() {
   const { user, loading } = useAuth();
   const token = reloadAccessTokenFromStorage() ?? getAccessToken();

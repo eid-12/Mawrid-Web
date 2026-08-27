@@ -9,6 +9,7 @@ public final class TenantAccess {
     private TenantAccess() {
     }
 
+    /** Current JWT principal, or throws if the request is anonymous. */
     public static AppUserPrincipal principal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof AppUserPrincipal p)) {
@@ -19,6 +20,7 @@ public final class TenantAccess {
 
     public static void requireTenant(Long tenantId) {
         AppUserPrincipal p = principal();
+        // Super-admin has no college; everyone else must match the path tenantId.
         if (hasRole(UserRole.SUPER_ADMIN)) return;
         if (p.getTenantId() == null || !p.getTenantId().equals(tenantId)) {
             throw new IllegalArgumentException("Forbidden tenant access");

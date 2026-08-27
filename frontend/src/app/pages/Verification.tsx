@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -86,7 +86,7 @@ export default function Verification() {
     return () => window.clearInterval(timer);
   }, [resendBlocked]);
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !otp || otp.length !== 6) {
       setOtpError('Please enter the 6-digit code');

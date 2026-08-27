@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -162,7 +162,7 @@ export default function UserManagement() {
   const editPhoneValid = !editForm.phone.trim() || isValidSaudiPhone(editForm.phone);
   const editPhoneError = editForm.phone.trim() && !isValidSaudiPhone(editForm.phone) ? SAUDI_PHONE_ERROR : undefined;
 
-  const handleEditSave = async (e: React.FormEvent) => {
+  const handleEditSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!editUser) return;
     if ((editForm.role === 'admin' || editForm.role === 'user') && (editForm.college === 'System' || !editForm.college)) {
@@ -237,7 +237,7 @@ export default function UserManagement() {
   const addPhoneValid = !addForm.phone.trim() || isValidSaudiPhone(addForm.phone);
   const addPhoneError = addForm.phone.trim() && !isValidSaudiPhone(addForm.phone) ? SAUDI_PHONE_ERROR : undefined;
 
-  const handleAddUser = async (e: React.FormEvent) => {
+  const handleAddUser = async (e: FormEvent) => {
     e.preventDefault();
     if (!addForm.password.trim()) {
       setToastMessage('Password is required');

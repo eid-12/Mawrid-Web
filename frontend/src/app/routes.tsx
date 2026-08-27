@@ -37,6 +37,7 @@ import SuperAdminSettings from "./pages/superadmin/SuperAdminSettings";
 
 export const router = createBrowserRouter([
   {
+    // Landing + auth screens: logged-in users are redirected to their dashboard.
     element: <GuestOnly />,
     children: [
       { path: "/", Component: Landing },
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       { path: "/verify-email", Component: Verification },
     ],
   },
+  // Email-link page: keep outside GuestOnly so a logged-in tab can still open a reset URL.
   { path: "/reset-password", Component: ResetPassword },
   {
     element: <RequireAuth allowedRoles={["USER"]} />,
@@ -98,6 +100,7 @@ export const router = createBrowserRouter([
           { path: "settings", Component: SuperAdminSettings },
         ],
       },
+      // Alias for older /super-admin bookmarks.
       {
         path: "/super-admin",
         Component: SuperAdminLayout,

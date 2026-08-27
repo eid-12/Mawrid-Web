@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Sidebar } from '../components/Sidebar';
 import { LayoutDashboard, Package, FileText, Settings } from 'lucide-react';
@@ -9,7 +9,6 @@ export default function UserLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [isEditingName, setIsEditingName] = useState(false);
   const [tenantStatus, setTenantStatus] = useState<string | null>(null);
   
   const links = [
@@ -24,10 +23,6 @@ export default function UserLayout() {
     navigate('/login', { replace: true });
   };
 
-  const handleNameChange = (_newName: string) => {
-    setIsEditingName(false);
-  };
-
   useEffect(() => {
     let cancelled = false;
     async function syncTenantStatus() {
@@ -36,6 +31,7 @@ export default function UserLayout() {
         return;
       }
       try {
+        // Deleted college: API returns no tenantId (or COLLEGE_REMOVED). Force a fresh login.
         const status = await api.get<{ tenantId?: number | null; status?: string | null }>('/api/auth/tenant-status');
         if (cancelled) return;
         if (!status?.tenantId) {

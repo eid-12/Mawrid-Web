@@ -79,6 +79,8 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   });
 
   const skipRefresh = /\/api\/auth\/(login|register|forgot-password|verify-|resend-verification|reset-password)/.test(path);
+  // Access JWT expired: rotate via HttpOnly refresh cookie, then retry once.
+  // Login/signup/OTP routes skip this so a bad password is not treated as an expired session.
   if (res.status === 401 && retry && !skipRefresh) {
     const refreshed = await tryRefresh();
     if (refreshed) return request<T>(path, init, false);

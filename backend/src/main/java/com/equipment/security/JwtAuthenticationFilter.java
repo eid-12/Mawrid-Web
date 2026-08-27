@@ -45,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 User dbUser = userRepository.findByEmail(email).orElse(null);
+                // College wiped: user is detached (no tenant) and marked inactive.
                 if (dbUser != null
                         && dbUser.getTenant() == null
                         && !Boolean.TRUE.equals(dbUser.getIsActive())) {
@@ -66,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 userRepository.updateLastActiveAtByEmail(email, Instant.now());
             }
         } catch (Exception ignored) {
-            // Invalid/expired token -> treat as unauthenticated
+            // Expired or forged JWT: continue unauthenticated so SecurityConfig can reject the route.
         }
 
         filterChain.doFilter(request, response);

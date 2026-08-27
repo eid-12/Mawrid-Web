@@ -47,7 +47,7 @@ Important environment variables:
 | `FRONTEND_URL` | CORS origin |
 | `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD` | MySQL |
 | `APP_JWT_SECRET` | HMAC signing key |
-| `APP_JWT_ACCESS_TTL_SECONDS` | Access token lifetime (default 1800) |
+| `APP_JWT_ACCESS_TTL_SECONDS` | Access token lifetime (default 7200 = 2 hours) |
 | `APP_REFRESH_TTL_SECONDS` | Refresh lifetime (default 30 days) |
 | `MAIL_PASSWORD` or `SPRING_MAIL_PASSWORD` | SMTP password (Resend API key in production) |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_FROM` | Mail |

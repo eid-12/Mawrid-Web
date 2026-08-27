@@ -233,6 +233,7 @@ public class EmailService {
 
     private void sendHtml(String to, String subject, String html) {
         if (!emailConfigured) {
+            // API still boots without SMTP; OTP/reset callers surface this as a 500 with a clear message.
             throw new IllegalStateException(
                     "Email is not configured. Set the MAIL_PASSWORD environment variable for Resend SMTP."
             );

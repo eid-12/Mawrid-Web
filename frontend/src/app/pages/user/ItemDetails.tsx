@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -144,7 +144,7 @@ export default function ItemDetails() {
     return '';
   };
 
-  const handleRequestSubmit = async (e: React.FormEvent) => {
+  const handleRequestSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!item || !user?.userId) return;
     const error = validateRequest();

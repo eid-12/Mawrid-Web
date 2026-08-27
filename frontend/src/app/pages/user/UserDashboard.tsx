@@ -47,7 +47,7 @@ export default function UserDashboard() {
   const { user, refreshUserStatus } = useAuth();
   const [requests, setRequests] = useState<BorrowRequestDto[]>([]);
   const [loading, setLoading] = useState(true);
-  const { loading: collegeEligibilityLoading, canAccessCoreFeatures, shouldShowRestriction } = useCollegeEligibility();
+  const { canAccessCoreFeatures, shouldShowRestriction } = useCollegeEligibility();
 
   useEffect(() => {
     if (!user?.userId) return;
@@ -156,9 +156,7 @@ export default function UserDashboard() {
         </Card>
       )}
 
-      {collegeEligibilityLoading ? (
-        <Card className="py-10 text-center text-muted-foreground">Loading...</Card>
-      ) : canAccessCoreFeatures && (
+      {canAccessCoreFeatures && (
         <>
           {/* Stats Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">

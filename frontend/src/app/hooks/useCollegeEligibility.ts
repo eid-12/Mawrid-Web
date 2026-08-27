@@ -3,22 +3,14 @@ import { useAuth } from '../auth/AuthContext';
 export const COLLEGE_REQUIRED_MESSAGE =
   'Action Required: Please select an active college in Settings to start borrowing equipment.';
 
+/** Users without an ACTIVE college cannot borrow or browse as a borrower. */
 export function useCollegeEligibility() {
   const { user } = useAuth();
-  const normalizedTenantStatus = (user?.tenantStatus ?? '').toUpperCase();
-  const hasAssignedCollege = Boolean(user?.tenantId);
-  const hasActiveCollege = Boolean(hasAssignedCollege && normalizedTenantStatus === 'ACTIVE');
-
-  const loading = false;
-  const canAccessCoreFeatures = hasActiveCollege;
-  const shouldShowRestriction = !hasActiveCollege;
+  const hasActiveCollege =
+    Boolean(user?.tenantId) && (user?.tenantStatus ?? '').toUpperCase() === 'ACTIVE';
 
   return {
-    loading,
-    hasActiveCollege,
-    canAccessCoreFeatures,
-    shouldShowRestriction,
-    requiresCollegeSelection: shouldShowRestriction,
+    canAccessCoreFeatures: hasActiveCollege,
+    shouldShowRestriction: !hasActiveCollege,
   };
 }
-

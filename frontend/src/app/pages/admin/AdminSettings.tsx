@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
@@ -40,7 +40,7 @@ export default function AdminSettings() {
     }).catch(() => {});
   }, []);
 
-  const handleNameSubmit = async (e: React.FormEvent) => {
+  const handleNameSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       await api.put('/api/auth/me', { name });
@@ -62,7 +62,7 @@ export default function AdminSettings() {
   const phoneValid = !phoneNumber.trim() || isValidSaudiPhone(phoneNumber);
   const phoneError = phoneNumber.trim() && !isValidSaudiPhone(phoneNumber) ? SAUDI_PHONE_ERROR : undefined;
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!phoneValid) return;
     try {
@@ -78,7 +78,7 @@ export default function AdminSettings() {
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       setToastVariant('cancel');

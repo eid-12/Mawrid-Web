@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -103,7 +103,7 @@ export default function Colleges() {
   const addPhoneValid = !form.phone.trim() || isValidSaudiPhone(form.phone);
   const addPhoneError = form.phone.trim() && !isValidSaudiPhone(form.phone) ? SAUDI_PHONE_ERROR : undefined;
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
     if (!addPhoneValid) return;
     setIsSavingAdd(true);
@@ -135,7 +135,7 @@ export default function Colleges() {
   const editPhoneValid = !editForm.phone.trim() || isValidSaudiPhone(editForm.phone);
   const editPhoneError = editForm.phone.trim() && !isValidSaudiPhone(editForm.phone) ? SAUDI_PHONE_ERROR : undefined;
 
-  const handleEditSave = async (e: React.FormEvent) => {
+  const handleEditSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!editCollege) return;
     if (!editPhoneValid) return;

@@ -8,6 +8,7 @@ type TenantStatusResponse = {
   status?: string | null;
 };
 
+/** Admin routes: block the portal if the college row was deleted. */
 export function RequireActiveAdminCollege() {
   const { user } = useAuth();
   const location = useLocation();

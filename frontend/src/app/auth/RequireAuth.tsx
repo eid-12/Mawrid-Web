@@ -1,8 +1,8 @@
-import React from "react";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { getAccessToken, reloadAccessTokenFromStorage } from "../api/client";
 import { Role, useAuth } from "./AuthContext";
 
+/** Blocks unauthenticated users and wrong roles. Re-reads localStorage so Back/Forward cannot keep a dead session. */
 export function RequireAuth({ allowedRoles }: { allowedRoles?: Role[] }) {
   const { user, loading } = useAuth();
   const location = useLocation();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Sidebar } from '../components/Sidebar';
 import { LayoutDashboard, Package, FileText, ClipboardCheck, Settings } from 'lucide-react';

@@ -68,7 +68,7 @@ public class UserRegistrationTransactionService {
 
         User user = User.builder()
                 .tenant(tenant)
-                .role(UserRole.USER)
+                .role(UserRole.USER) // public signup cannot create ADMIN / SUPER_ADMIN
                 .name(normalizedName)
                 .email(request.getEmail())
                 .phone(request.getPhone())

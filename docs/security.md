@@ -16,7 +16,7 @@ Public matchers are listed in [api-reference.md](api-reference.md). Everything e
 
 | Token | Storage | Lifetime (defaults) |
 |-------|---------|---------------------|
-| Access JWT | Frontend `localStorage` (`mawrid_access_token`) | 30 minutes |
+| Access JWT | Frontend `localStorage` (`mawrid_access_token`) | 2 hours |
 | Refresh | HttpOnly cookie `refresh_token` (SameSite=Lax) + hash in `refresh_tokens` | 30 days |
 
 Access JWT claims include email (`sub`), user id (`uid`), tenant id (`tid`), and role.

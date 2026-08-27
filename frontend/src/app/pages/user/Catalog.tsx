@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, type FormEvent } from 'react';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Badge } from '../../components/Badge';
@@ -158,7 +158,7 @@ export default function Catalog() {
     return { minStart, maxEnd };
   };
 
-  const handleRequestSubmit = async (e: React.FormEvent) => {
+  const handleRequestSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!requestModal || !user?.userId) return;
     if (isCollegeInactive) {

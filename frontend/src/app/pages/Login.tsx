@@ -79,6 +79,7 @@ export default function Login() {
         from && from.startsWith('/') && !from.startsWith('//') && sameRolePath
           ? from
           : dashboardPathForRole(normalizedRole);
+      // Replace history so Back cannot reopen this login page as a fake "already in" session.
       navigate(target, { replace: true });
     } catch (e: unknown) {
       const err = e as ApiError;
@@ -173,14 +174,7 @@ export default function Login() {
               required
             />
             
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
-                />
-                <span className="text-sm text-foreground">Remember me</span>
-              </label>
+            <div className="flex justify-end">
               <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                 Forgot password?
               </Link>

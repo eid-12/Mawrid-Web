@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Card } from '../../components/Card';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
@@ -26,7 +26,7 @@ export default function Settings() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loading: collegeEligibilityLoading, canAccessCoreFeatures, shouldShowRestriction } = useCollegeEligibility();
+  const { canAccessCoreFeatures, shouldShowRestriction } = useCollegeEligibility();
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [tenantOptions, setTenantOptions] = useState<TenantOption[]>([]);
@@ -69,12 +69,12 @@ export default function Settings() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!collegeEligibilityLoading && canAccessCoreFeatures && searchParams.get('reason') === 'college_required') {
+    if (canAccessCoreFeatures && searchParams.get('reason') === 'college_required') {
       navigate('/user/settings', { replace: true });
     }
-  }, [collegeEligibilityLoading, canAccessCoreFeatures, navigate, searchParams]);
+  }, [canAccessCoreFeatures, navigate, searchParams]);
 
-  const handleNameSubmit = async (e: React.FormEvent) => {
+  const handleNameSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
       await api.put('/api/auth/me', {
@@ -100,7 +100,7 @@ export default function Settings() {
   const phoneValid = !phoneNumber.trim() || isValidSaudiPhone(phoneNumber);
   const phoneError = phoneNumber.trim() && !isValidSaudiPhone(phoneNumber) ? SAUDI_PHONE_ERROR : undefined;
 
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!phoneValid) return;
     try {
@@ -116,7 +116,7 @@ export default function Settings() {
     }
   };
   
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       setPasswordMismatchDialog(true);

@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api, ApiError, AUTH_EXPIRED_EVENT, getAccessToken, reloadAccessTokenFromStorage, setAccessToken } from "../api/client";
 
 export type Role = "USER" | "ADMIN" | "SUPER_ADMIN";
 
+/** Home path after login. Strips a possible ROLE_ prefix from the JWT/API. */
 export function dashboardPathForRole(role: Role | string | undefined): string {
   const normalized = String(role ?? "")
     .trim()
@@ -73,7 +74,7 @@ function persistUser(user: AuthUser | null) {
   window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() =>
     getAccessToken() ? loadStoredUser() : null
   );
@@ -131,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
     }
+    // No access token: skip /me so a restored Back page cannot revive a session.
     if (!getAccessToken()) {
       setUser(null);
       persistUser(null);
@@ -179,10 +181,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function refreshUserStatus() {
-    await refreshProfile();
-  }
-
   async function logout() {
     setLoading(true);
     setError(null);
@@ -196,6 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  /** Public signup. Backend ignores a client-supplied ADMIN/SUPER_ADMIN role. */
   async function register(payload: {
     tenantId?: number | null;
     role: Role;
@@ -251,16 +250,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       verifyOtpAndResetPassword,
       hydrate,
       refreshProfile,
-      refreshUserStatus,
+      refreshUserStatus: refreshProfile,
     }),
     [user, loading, error]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     void hydrate();
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const onExpired = () => {
       setUser(null);
       persistUser(null);
@@ -269,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const syncFromStorage = () => {
       reloadAccessTokenFromStorage();
       if (!getAccessToken()) {
@@ -277,6 +276,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         persistUser(null);
       }
     };
+    // Back/forward, restored tabs, and logout in another tab must drop a stale in-memory session.
     const onPageShow = (event: PageTransitionEvent) => {
       syncFromStorage();
       if (event.persisted && getAccessToken()) {

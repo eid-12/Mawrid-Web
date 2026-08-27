@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, type FormEvent } from 'react';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
@@ -107,20 +107,14 @@ export default function Inventory() {
     ]);
 
     if (eqResult.status === 'fulfilled') {
-      const eqList = coerceArray<EquipmentDto>(eqResult.value);
-      console.log('Inventory Data (equipment):', eqResult.value);
-      setEquipment(eqList);
+      setEquipment(coerceArray<EquipmentDto>(eqResult.value));
     } else {
-      console.error('Inventory fetch failed (equipment):', eqResult.reason);
       setEquipment([]);
     }
 
     if (unitResult.status === 'fulfilled') {
-      const unitList = coerceArray<EquipmentUnitDto>(unitResult.value);
-      console.log('Inventory Data (units):', unitResult.value);
-      setUnits(unitList);
+      setUnits(coerceArray<EquipmentUnitDto>(unitResult.value));
     } else {
-      console.error('Inventory fetch failed (units):', unitResult.reason);
       setUnits([]);
     }
   }, [tenantId]);
@@ -278,7 +272,7 @@ export default function Inventory() {
     }
   };
 
-  const handleAddEquipment = async (e: React.FormEvent) => {
+  const handleAddEquipment = async (e: FormEvent) => {
     e.preventDefault();
     if (isReadOnlyCollege) {
       setToastVariant('cancel');
@@ -393,7 +387,7 @@ export default function Inventory() {
     setShowAddForm(true);
   };
 
-  const handleEditSave = async (e: React.FormEvent, id: number) => {
+  const handleEditSave = async (e: FormEvent, id: number) => {
     e.preventDefault();
     if (isReadOnlyCollege) {
       setToastVariant('cancel');
@@ -429,7 +423,7 @@ export default function Inventory() {
     }
   };
 
-  const handleAddUnit = async (e: React.FormEvent) => {
+  const handleAddUnit = async (e: FormEvent) => {
     e.preventDefault();
     if (isReadOnlyCollege) {
       setToastVariant('cancel');
@@ -505,7 +499,7 @@ export default function Inventory() {
     });
   };
 
-  const handleUnitSave = async (e: React.FormEvent) => {
+  const handleUnitSave = async (e: FormEvent) => {
     e.preventDefault();
     if (isReadOnlyCollege) {
       setToastVariant('cancel');

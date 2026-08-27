@@ -36,7 +36,9 @@ public class BorrowRequestService {
             "Action disabled. Your college is currently deactivated.";
     private static final String COLLEGE_REMOVED_MESSAGE =
             "Access Denied: Your college has been permanently removed from the system.";
+    /** Concurrent APPROVED / BORROWED / ON_LOAN items allowed per student. */
     private static final int MAX_ACTIVE_ITEMS_PER_USER = 3;
+    /** PENDING/APPROVED still occupy catalog capacity until returned or rejected. */
     private static final List<String> CAPACITY_HOLDING_STATUSES = List.of("PENDING", "APPROVED");
     private static final List<String> DUPLICATE_BLOCKING_STATUSES = List.of("PENDING", "APPROVED", "BORROWED", "ON_LOAN");
     private static final List<String> ACTIVE_ITEM_LIMIT_STATUSES = List.of("APPROVED", "BORROWED", "ON_LOAN");
@@ -325,6 +327,7 @@ public class BorrowRequestService {
         return detachedFromCollege && inactive;
     }
 
+    /** Rejects a duplicate item, more than 3 active loans, or any overdue loan. */
     private void enforceBorrowingConstraints(Long userId, Long equipmentId) {
         if (userId == null || equipmentId == null) return;
 
