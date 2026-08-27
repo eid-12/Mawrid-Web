@@ -29,12 +29,14 @@ public class EmailService {
     @Value("${spring.mail.password:}")
     private String smtpApiKey;
 
+    private boolean emailConfigured;
+
     @PostConstruct
     void validateEmailConfiguration() {
-        if (smtpApiKey == null || smtpApiKey.isBlank()) {
-            throw new IllegalStateException(
-                    "Missing MAIL_PASSWORD environment variable for Resend SMTP."
-            );
+        emailConfigured = smtpApiKey != null && !smtpApiKey.isBlank();
+        if (!emailConfigured) {
+            log.warn("MAIL_PASSWORD is not set. The API will start, but email sending is disabled.");
+            return;
         }
         log.info("Email sender configured as {}", fromEmail);
     }
@@ -230,6 +232,11 @@ public class EmailService {
     }
 
     private void sendHtml(String to, String subject, String html) {
+        if (!emailConfigured) {
+            throw new IllegalStateException(
+                    "Email is not configured. Set the MAIL_PASSWORD environment variable for Resend SMTP."
+            );
+        }
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
