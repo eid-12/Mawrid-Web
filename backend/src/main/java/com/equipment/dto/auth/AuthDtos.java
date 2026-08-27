@@ -50,6 +50,8 @@ public final class AuthDtos {
         private String email;
         @NotBlank
         private String password;
+        /** When true, persist the refresh cookie for 30 days. When false/omitted, session cookie only. */
+        private Boolean rememberMe;
     }
 
     @Getter

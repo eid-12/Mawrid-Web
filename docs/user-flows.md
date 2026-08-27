@@ -20,10 +20,10 @@ flowchart TD
 
 ## Login and session
 
-1. `POST /api/auth/login` with email and password.
+1. `POST /api/auth/login` with email, password, and optional `rememberMe`.
 2. Backend checks password, email verified, college not removed, and (for ADMIN) college `ACTIVE`.
-3. Response body includes `accessToken` and user fields. Refresh token is set as cookie `refresh_token`.
-4. Frontend stores the access token and user snapshot, then **replaces** history with the role dashboard.
+3. Response body includes `accessToken` and user fields. Refresh token is set as cookie `refresh_token` (30 days if Remember me, otherwise a session cookie).
+4. Frontend stores the access token and user snapshot in `localStorage` (Remember me) or `sessionStorage` (session only), then **replaces** history with the role dashboard.
 5. Authenticated visitors who open `/login` or `/` are sent back to that dashboard (`GuestOnly`).
 
 ## Password reset

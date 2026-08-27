@@ -6,19 +6,73 @@ export type ApiError = {
 };
 
 let accessToken: string | null = null;
-const ACCESS_TOKEN_STORAGE_KEY = "mawrid_access_token";
+export const ACCESS_TOKEN_STORAGE_KEY = "mawrid_access_token";
+export const AUTH_USER_STORAGE_KEY = "mawrid_auth_user";
+export const REMEMBER_ME_PREF_KEY = "mawrid_remember_me";
 
-if (typeof window !== "undefined") {
-  accessToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+function authStorage(): Storage {
+  return isRememberMeEnabled() ? window.localStorage : window.sessionStorage;
 }
 
-export function setAccessToken(token: string | null) {
+/** Last login choice: checked Remember me → "1". Used to restore the checkbox. */
+export function getRememberMePreference(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(REMEMBER_ME_PREF_KEY) === "1";
+}
+
+/**
+ * Where the current session lives.
+ * Missing pref + a leftover localStorage token = legacy "always persist" sessions.
+ */
+export function isRememberMeEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  const pref = window.localStorage.getItem(REMEMBER_ME_PREF_KEY);
+  if (pref === "0") return false;
+  if (pref === "1") return true;
+  return Boolean(window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY));
+}
+
+function readStoredAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  if (isRememberMeEnabled()) {
+    return window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY)
+      ?? window.sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  }
+  return window.sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+}
+
+export function readAuthUserSnapshot(): string | null {
+  if (typeof window === "undefined") return null;
+  if (isRememberMeEnabled()) {
+    return window.localStorage.getItem(AUTH_USER_STORAGE_KEY)
+      ?? window.sessionStorage.getItem(AUTH_USER_STORAGE_KEY);
+  }
+  return window.sessionStorage.getItem(AUTH_USER_STORAGE_KEY);
+}
+
+export function persistAuthUserSnapshot(serialized: string | null) {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  if (serialized) {
+    authStorage().setItem(AUTH_USER_STORAGE_KEY, serialized);
+  }
+}
+
+if (typeof window !== "undefined") {
+  accessToken = readStoredAccessToken();
+}
+
+export function setAccessToken(token: string | null, rememberMe?: boolean) {
   accessToken = token;
   if (typeof window === "undefined") return;
+  if (typeof rememberMe === "boolean") {
+    window.localStorage.setItem(REMEMBER_ME_PREF_KEY, rememberMe ? "1" : "0");
+  }
+  window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   if (token) {
-    window.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
-  } else {
-    window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+    authStorage().setItem(ACCESS_TOKEN_STORAGE_KEY, token);
   }
 }
 
@@ -29,7 +83,7 @@ export function getAccessToken() {
 /** Re-read the token after bfcache/back-forward so in-memory state matches storage. */
 export function reloadAccessTokenFromStorage() {
   if (typeof window === "undefined") return accessToken;
-  accessToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  accessToken = readStoredAccessToken();
   return accessToken;
 }
 
@@ -58,12 +112,11 @@ function buildApiUrl(path: string): string {
 
 export const AUTH_EXPIRED_EVENT = "mawrid:auth-expired";
 export const SESSION_EXPIRED_NOTICE_KEY = "mawrid_session_expired";
-const AUTH_USER_STORAGE_KEY = "mawrid_auth_user";
 
 function clearAuthSession() {
   setAccessToken(null);
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  persistAuthUserSnapshot(null);
   window.sessionStorage.setItem(SESSION_EXPIRED_NOTICE_KEY, "1");
   window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
 }

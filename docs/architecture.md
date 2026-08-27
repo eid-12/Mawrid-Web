@@ -51,10 +51,10 @@ sequenceDiagram
   participant API as Backend
   participant DB as MySQL
 
-  B->>API: POST /api/auth/login
+  B->>API: POST /api/auth/login (email, password, rememberMe)
   API->>DB: Verify user, store refresh hash
   API-->>B: accessToken (JSON) + refresh_token (HttpOnly cookie)
-  B->>B: Save access token in localStorage
+  B->>B: Save access token (localStorage if Remember me, else sessionStorage)
   B->>API: API calls with Bearer access token
   API-->>B: 401 if access expired
   B->>API: POST /api/auth/refresh (cookie)

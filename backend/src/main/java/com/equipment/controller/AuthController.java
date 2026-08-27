@@ -58,7 +58,7 @@ public class AuthController {
             HttpServletResponse response
     ) {
         AuthService.AuthResult result = authService.login(request, httpRequest);
-        setRefreshCookie(response, result.refreshToken());
+        setRefreshCookie(response, result.refreshToken(), result.rememberMe());
         return ResponseEntity.ok(result.body());
     }
 
@@ -75,7 +75,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
         AuthService.RefreshRotation rotation = authService.refresh(raw, httpRequest);
-        setRefreshCookie(response, rotation.refreshToken());
+        setRefreshCookie(response, rotation.refreshToken(), rotation.rememberMe());
         return ResponseEntity.ok(AuthDtos.RefreshResponse.builder().accessToken(rotation.accessToken()).build());
     }
 
@@ -143,15 +143,16 @@ public class AuthController {
 
     private static final int REFRESH_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
-    private static void setRefreshCookie(HttpServletResponse response, String rawToken) {
-        ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE, rawToken)
+    private static void setRefreshCookie(HttpServletResponse response, String rawToken, boolean rememberMe) {
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(REFRESH_COOKIE, rawToken)
                 .httpOnly(true)
                 .secure(false)
                 .path("/")
-                .sameSite("Lax")
-                .maxAge(Duration.ofSeconds(REFRESH_MAX_AGE_SECONDS))
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+                .sameSite("Lax");
+        if (rememberMe) {
+            builder.maxAge(Duration.ofSeconds(REFRESH_MAX_AGE_SECONDS));
+        }
+        response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
     }
 
     private static void clearRefreshCookie(HttpServletResponse response) {

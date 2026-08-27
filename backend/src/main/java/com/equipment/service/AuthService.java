@@ -166,7 +166,8 @@ public class AuthService {
         }
 
         String access = jwtService.issueAccessToken(principal);
-        RefreshIssued refresh = issueRefreshToken(user, httpRequest);
+        boolean rememberMe = Boolean.TRUE.equals(request.getRememberMe());
+        RefreshIssued refresh = issueRefreshToken(user, httpRequest, rememberMe);
 
         AuthDtos.TokenResponse body = AuthDtos.TokenResponse.builder()
                 .accessToken(access)
@@ -180,7 +181,7 @@ public class AuthService {
                 .emailVerified(user.getEmailVerified())
                 .build();
 
-        return new AuthResult(body, refresh.rawToken());
+        return new AuthResult(body, refresh.rawToken(), rememberMe);
     }
 
     @Transactional
@@ -203,7 +204,8 @@ public class AuthService {
         User user = existing.getUser();
         user.setLastActiveAt(Instant.now());
         userRepository.save(user);
-        RefreshIssued next = issueRefreshToken(user, httpRequest);
+        boolean rememberMe = !Boolean.FALSE.equals(existing.getRememberMe());
+        RefreshIssued next = issueRefreshToken(user, httpRequest, rememberMe);
         refreshTokenRepository.save(existing);
 
         // link chain (optional)
@@ -230,7 +232,7 @@ public class AuthService {
 
         AppUserPrincipal principal = new AppUserPrincipal(refreshUser);
         String access = jwtService.issueAccessToken(principal);
-        return new RefreshRotation(access, next.rawToken());
+        return new RefreshRotation(access, next.rawToken(), rememberMe);
     }
 
     @Transactional
@@ -398,17 +400,21 @@ public class AuthService {
         return payload;
     }
 
-    private RefreshIssued issueRefreshToken(User user, HttpServletRequest httpRequest) {
+    private static final long SESSION_REFRESH_TTL_SECONDS = 12 * 60 * 60;
+
+    private RefreshIssued issueRefreshToken(User user, HttpServletRequest httpRequest, boolean rememberMe) {
         String raw = CryptoUtil.randomUrlToken(48);
         String hash = CryptoUtil.sha256Hex(raw);
         Instant now = Instant.now();
+        long ttlSeconds = rememberMe ? refreshTtlSeconds : SESSION_REFRESH_TTL_SECONDS;
         RefreshToken token = RefreshToken.builder()
                 .user(user)
                 .tokenHash(hash)
                 .issuedAt(now)
-                .expiresAt(now.plus(Duration.ofSeconds(refreshTtlSeconds)))
+                .expiresAt(now.plus(Duration.ofSeconds(ttlSeconds)))
                 .createdIp(getClientIp(httpRequest))
                 .userAgent(httpRequest.getHeader("User-Agent"))
+                .rememberMe(rememberMe)
                 .build();
         refreshTokenRepository.save(token);
         return new RefreshIssued(raw);
@@ -444,10 +450,10 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public record AuthResult(AuthDtos.TokenResponse body, String refreshToken) {
+    public record AuthResult(AuthDtos.TokenResponse body, String refreshToken, boolean rememberMe) {
     }
 
-    public record RefreshRotation(String accessToken, String refreshToken) {
+    public record RefreshRotation(String accessToken, String refreshToken, boolean rememberMe) {
     }
 
     private record RefreshIssued(String rawToken) {

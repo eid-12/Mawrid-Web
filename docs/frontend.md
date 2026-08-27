@@ -47,8 +47,9 @@ Docker build-arg: `VITE_API_BASE_URL=/api` (same-origin + Nginx proxy).
 ## API client (`src/app/api/client.ts`)
 
 - JSON `fetch` with `credentials: "include"` and `cache: "no-store"`
-- Attaches `Authorization: Bearer` when a token is in memory / `localStorage` (`mawrid_access_token`)
-- User snapshot: `localStorage` key `mawrid_auth_user`
+- Attaches `Authorization: Bearer` when a token is in memory / storage (`mawrid_access_token`)
+- Remember me checked: token + user snapshot in `localStorage`. Unchecked: `sessionStorage` (gone when the browser closes)
+- User snapshot key: `mawrid_auth_user`
 - On **401**, tries `POST /api/auth/refresh` once, then fires `mawrid:auth-expired` and clears storage
 
 ## UI conventions

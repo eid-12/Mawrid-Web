@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { PageNotice } from '../components/PageNotice';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { dashboardPathForRole, useAuth } from '../auth/AuthContext';
-import { SESSION_EXPIRED_NOTICE_KEY, type ApiError } from '../api/client';
+import { getRememberMePreference, SESSION_EXPIRED_NOTICE_KEY, type ApiError } from '../api/client';
 import { formatApiError, SESSION_EXPIRED_MESSAGE } from '../lib/userFacingError';
 
 export default function Login() {
@@ -22,6 +22,7 @@ export default function Login() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showVerificationWarning, setShowVerificationWarning] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => getRememberMePreference());
   const { login, error, clearError } = useAuth();
 
   const resetErrors = () => {
@@ -76,7 +77,7 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      const loggedInUser = await login(trimmedEmail, password);
+      const loggedInUser = await login(trimmedEmail, password, rememberMe);
       setShowVerificationWarning(false);
       const normalizedRole = String(loggedInUser?.role ?? '')
         .trim()
@@ -184,8 +185,20 @@ export default function Login() {
               error={passwordError ?? undefined}
             />
 
-            <div className="flex justify-end">
-              <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <input
+                  type="checkbox"
+                  id="remember-me"
+                  className="w-4 h-4 rounded border-[#E2E8F0] dark:border-[#334155] text-[#8393DE] focus:ring-[#8393DE]/50 cursor-pointer"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <label htmlFor="remember-me" className="text-sm text-muted-foreground cursor-pointer select-none">
+                  Remember me
+                </label>
+              </div>
+              <Link to="/forgot-password" className="text-sm text-primary hover:underline shrink-0">
                 Forgot password?
               </Link>
             </div>

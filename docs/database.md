@@ -39,7 +39,7 @@ erDiagram
 | `equipment_units` | EquipmentUnit | `serialNo`, `assetTag`, unit `status` |
 | `borrow_requests` | BorrowRequest | Dates, status, decision fields |
 | `check_transactions` | CheckTransaction | `CHECK_OUT` / `CHECK_IN` |
-| `refresh_tokens` | RefreshToken | Hashed refresh; rotation / revoke |
+| `refresh_tokens` | RefreshToken | Hashed refresh; rotation / revoke; `remember_me` |
 | `user_tokens` | UserToken | OTP and verify/reset hashes |
 | `activity_logs` | ActivityLog | Audit trail |
 | `dismissed_dashboard_alerts` | DismissedDashboardAlert | Per-tenant dismissed keys |

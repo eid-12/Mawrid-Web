@@ -16,8 +16,12 @@ Public matchers are listed in [api-reference.md](api-reference.md). Everything e
 
 | Token | Storage | Lifetime (defaults) |
 |-------|---------|---------------------|
-| Access JWT | Frontend `localStorage` (`mawrid_access_token`) | 2 hours |
-| Refresh | HttpOnly cookie `refresh_token` (SameSite=Lax) + hash in `refresh_tokens` | 30 days |
+| Access JWT | `localStorage` if Remember me is checked; otherwise `sessionStorage` (`mawrid_access_token`) | 2 hours |
+| Refresh | HttpOnly cookie `refresh_token` (SameSite=Lax) + hash in `refresh_tokens` | 30 days if Remember me; session cookie (cleared when the browser closes) if not |
+
+Login body includes optional `rememberMe` (boolean). Omitted or `false` is a session-only login. Refresh rotation copies the original Remember-me flag onto the new cookie.
+
+The last Remember-me choice is stored in `localStorage` as `mawrid_remember_me` (`1` / `0`) so the checkbox can restore itself. Logout clears tokens, not that preference.
 
 Access JWT claims include email (`sub`), user id (`uid`), tenant id (`tid`), and role.
 
@@ -34,7 +38,7 @@ Set `APP_JWT_SECRET` in production. Do not rely on the development default in `a
 - `pageshow` / `popstate` / `storage` / `visibilitychange` re-read the token so Back/Forward and other tabs cannot keep a dead session on screen.
 - HTML `Cache-Control: no-store` on `index.html` (meta + Nginx) reduces bfcache of a logged-in shell.
 
-Planting a fake token in `localStorage` is not enough: `GET /api/auth/me` fails and the client clears the session.
+Planting a fake token in storage is not enough: `GET /api/auth/me` fails and the client clears the session.
 
 ## Data isolation
 
@@ -52,4 +56,4 @@ Planting a fake token in `localStorage` is not enough: `GET /api/auth/me` fails 
 ## Known deployment notes
 
 - Refresh cookie uses `secure=false` in code so local HTTP works. Production should be HTTPS; consider enabling `secure` when serving only TLS.
-- XSS on the SPA could steal the access token from `localStorage`. Keep dependencies updated and avoid `dangerouslySetInnerHTML` with user HTML.
+- XSS on the SPA could steal the access token from `localStorage` or `sessionStorage`. Keep dependencies updated and avoid `dangerouslySetInnerHTML` with user HTML.

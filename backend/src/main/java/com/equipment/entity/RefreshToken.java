@@ -48,6 +48,10 @@ public class RefreshToken {
     @Column(name = "user_agent", length = 255)
     private String userAgent;
 
+    /** Null on legacy rows is treated as remembered (30-day cookie). */
+    @Column(name = "remember_me")
+    private Boolean rememberMe;
+
     @PrePersist
     protected void onCreate() {
         if (issuedAt == null) issuedAt = Instant.now();

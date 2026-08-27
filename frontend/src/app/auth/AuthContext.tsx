@@ -1,5 +1,17 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, ApiError, AUTH_EXPIRED_EVENT, getAccessToken, reloadAccessTokenFromStorage, setAccessToken } from "../api/client";
+import {
+  ACCESS_TOKEN_STORAGE_KEY,
+  AUTH_USER_STORAGE_KEY,
+  api,
+  ApiError,
+  AUTH_EXPIRED_EVENT,
+  getAccessToken,
+  persistAuthUserSnapshot,
+  readAuthUserSnapshot,
+  reloadAccessTokenFromStorage,
+  REMEMBER_ME_PREF_KEY,
+  setAccessToken,
+} from "../api/client";
 
 export type Role = "USER" | "ADMIN" | "SUPER_ADMIN";
 
@@ -30,7 +42,7 @@ type AuthState = {
   loading: boolean;
   error: string | null;
   clearError: () => void;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthUser>;
   logout: () => Promise<void>;
   register: (payload: {
     tenantId?: number | null;
@@ -52,12 +64,11 @@ type AuthState = {
 };
 
 const Ctx = createContext<AuthState | undefined>(undefined);
-const AUTH_USER_STORAGE_KEY = "mawrid_auth_user";
 
 function loadStoredUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(AUTH_USER_STORAGE_KEY);
+    const raw = readAuthUserSnapshot();
     if (!raw) return null;
     return JSON.parse(raw) as AuthUser;
   } catch {
@@ -66,12 +77,7 @@ function loadStoredUser(): AuthUser | null {
 }
 
 function persistUser(user: AuthUser | null) {
-  if (typeof window === "undefined") return;
-  if (!user) {
-    window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
-    return;
-  }
-  window.localStorage.setItem(AUTH_USER_STORAGE_KEY, JSON.stringify(user));
+  persistAuthUserSnapshot(user ? JSON.stringify(user) : null);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -85,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
   }
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string, rememberMe = false) {
     setLoading(true);
     setError(null);
     try {
@@ -99,8 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: string;
         email: string;
         emailVerified: boolean;
-      }>("/api/auth/login", { email, password });
-      setAccessToken(data.accessToken);
+      }>("/api/auth/login", { email, password, rememberMe });
+      setAccessToken(data.accessToken, rememberMe);
       const tokenSaved = Boolean(getAccessToken());
       if (!tokenSaved) {
         throw new Error("Authentication token was not stored correctly.");
@@ -292,8 +298,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     const onStorage = (event: StorageEvent) => {
       if (
-        event.key === "mawrid_access_token" ||
+        event.key === ACCESS_TOKEN_STORAGE_KEY ||
         event.key === AUTH_USER_STORAGE_KEY ||
+        event.key === REMEMBER_ME_PREF_KEY ||
         event.key === null
       ) {
         syncFromStorage();

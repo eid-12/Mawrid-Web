@@ -13,7 +13,7 @@ Refresh uses the HttpOnly cookie `refresh_token` (`credentials: include`).
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/api/auth/register` | Create USER and send OTP |
-| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/login` | Login (`rememberMe` optional boolean) |
 | POST | `/api/auth/refresh` | New access token |
 | POST | `/api/auth/logout` | Revoke refresh + clear cookie |
 | POST | `/api/auth/forgot-password` | Send reset OTP |
