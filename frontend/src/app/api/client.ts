@@ -159,12 +159,20 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
     let code: string | undefined;
     try {
       const body = await res.json();
-      msg = body?.error ?? body?.message ?? msg;
+      msg = body?.error ?? body?.message ?? body?.detail ?? body?.title ?? msg;
       if (typeof body?.code === "string" && body.code) {
         code = body.code;
       }
     } catch {
       // ignore
+    }
+    if (
+      res.status === 429 ||
+      /\b429\b/.test(msg) ||
+      /too many requests/i.test(msg) ||
+      /too many email requests/i.test(msg)
+    ) {
+      msg = "A verification code was already sent to your email. Please wait 60 seconds, then try again.";
     }
     const err: ApiError = { status: res.status, message: msg, code };
     throw err;

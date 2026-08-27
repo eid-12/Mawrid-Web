@@ -12,6 +12,7 @@ import {
   REMEMBER_ME_PREF_KEY,
   setAccessToken,
 } from "../api/client";
+import { formatApiError } from "../lib/userFacingError";
 
 export type Role = "USER" | "ADMIN" | "SUPER_ADMIN";
 
@@ -125,8 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistUser(loggedInUser);
       return loggedInUser;
     } catch (e) {
-      const err = e as ApiError;
-      setError(err.message ?? "Login failed");
+      setError(formatApiError(e, "Login failed"));
       throw e;
     } finally {
       setLoading(false);

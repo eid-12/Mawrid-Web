@@ -1,9 +1,42 @@
 import type { ApiError } from "../api/client";
 
 export const SESSION_EXPIRED_MESSAGE = "Your session expired. Please sign in again.";
+export const EMAIL_COOLDOWN_MESSAGE =
+  "A verification code was already sent to your email. Please wait 60 seconds, then try again.";
 
 function isApiError(error: unknown): error is ApiError {
   return Boolean(error) && typeof error === "object" && "message" in error;
+}
+
+export function looksLikeRateLimit(text: string): boolean {
+  const raw = text.trim();
+  if (!raw) return false;
+  return (
+    /\b429\b/.test(raw) ||
+    /too many requests/i.test(raw) ||
+    /too many email requests/i.test(raw) ||
+    /request failed \(429\)/i.test(raw)
+  );
+}
+
+export function isRateLimitError(error: unknown): boolean {
+  const err = isApiError(error) ? error : undefined;
+  const raw = String(err?.message ?? (error instanceof Error ? error.message : "")).trim();
+  return err?.status === 429 || looksLikeRateLimit(raw);
+}
+
+export function userNoticeClass(message: string, wait = false): string {
+  if (wait || message === EMAIL_COOLDOWN_MESSAGE || looksLikeRateLimit(message)) {
+    return "p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl";
+  }
+  return "p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl";
+}
+
+export function userNoticeTextClass(message: string, wait = false): string {
+  if (wait || message === EMAIL_COOLDOWN_MESSAGE || looksLikeRateLimit(message)) {
+    return "text-sm text-amber-800 dark:text-amber-200";
+  }
+  return "text-sm text-red-700 dark:text-red-300";
 }
 
 /** Turns API/network failures into a sentence a student can act on. */
@@ -17,9 +50,8 @@ export function formatApiError(error: unknown, fallback = "Something went wrong.
   if (err?.code === "COLLEGE_REMOVED") {
     return "Access denied: your college has been removed from the system. Please contact an administrator.";
   }
-  if (err?.status === 429) {
-    if (raw && !/^request failed \(\d+\)$/i.test(raw)) return raw;
-    return "Please wait 60 seconds before requesting another email.";
+  if (isRateLimitError(error) || looksLikeRateLimit(raw)) {
+    return EMAIL_COOLDOWN_MESSAGE;
   }
 
   if (
@@ -40,5 +72,6 @@ export function formatApiError(error: unknown, fallback = "Something went wrong.
     return fallback;
   }
 
+  if (looksLikeRateLimit(raw)) return EMAIL_COOLDOWN_MESSAGE;
   return raw;
 }

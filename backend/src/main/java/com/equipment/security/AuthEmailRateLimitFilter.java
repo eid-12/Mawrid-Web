@@ -71,7 +71,7 @@ public class AuthEmailRateLimitFilter extends OncePerRequestFilter {
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                 response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.getWriter().write(
-                        "{\"error\":\"Too many email requests. Please wait 60 seconds and try again.\"}"
+                        "{\"error\":\"A verification code was already sent to your email. Please wait 60 seconds, then try again.\"}"
                 );
                 return;
             }

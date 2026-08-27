@@ -5,7 +5,7 @@ import { Input } from '../components/Input';
 import { Card } from '../components/Card';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
-import { formatApiError } from '../lib/userFacingError';
+import { formatApiError, userNoticeClass, userNoticeTextClass } from '../lib/userFacingError';
 import type { ApiError } from '../api/client';
 
 type Step = 'email' | 'otp' | 'success';
@@ -137,8 +137,8 @@ export default function ForgotPassword() {
           <Card>
             <form onSubmit={handleSendCode} noValidate className="space-y-5">
               {error && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className={userNoticeClass(error)}>
+                  <p className={userNoticeTextClass(error)}>{error}</p>
                 </div>
               )}
               <Input
@@ -173,8 +173,8 @@ export default function ForgotPassword() {
           <Card>
             <form onSubmit={handleVerifyOtp} noValidate className="space-y-5">
               {error && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className={userNoticeClass(error)}>
+                  <p className={userNoticeTextClass(error)}>{error}</p>
                 </div>
               )}
               <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">

@@ -49,7 +49,7 @@ Planting a fake token in storage is not enough: `GET /api/auth/me` fails and the
 ## Email and OTP
 
 - **OTP lifetime:** registration codes expire after **10 minutes**; password-reset codes expire after **5 minutes**.
-- **Per-user cooldown:** 60 seconds between outbound auth emails (`users.last_sent_at`). The send slot is claimed and committed **before** SMTP. Repeated signup / resend / forgot-password calls return **HTTP 429** with `Retry-After: 60`.
+- **Per-user cooldown:** 60 seconds between outbound auth emails (`users.last_sent_at`). The send slot is claimed and committed **before** SMTP. Repeated signup / resend / forgot-password calls return **HTTP 429** with `Retry-After: 60`. The student sees: "A verification code was already sent to your email. Please wait 60 seconds, then try again."
 - **Concurrent sends:** `SELECT … FOR UPDATE` on the user row so two in-flight requests cannot both send mail. The second call waits, then receives 429.
 - **IP burst cap:** `AuthEmailRateLimitFilter` allows 20 POSTs per minute per client IP on `/api/auth/register`, `/forgot-password`, and `/resend-verification`.
 - The verification and forgot-password pages also show a 60s resend timer in the browser; the API cooldown is authoritative.

@@ -28,7 +28,7 @@ Refresh uses the HttpOnly cookie `refresh_token` (`credentials: include`).
 
 All other `/api/**` routes require authentication.
 
-Auth email endpoints (`register`, `resend-verification`, `forgot-password`) enforce a **60 second cooldown** per user. Excess calls return **HTTP 429** with `{ "error": "Please wait 60 seconds before requesting another email." }` and `Retry-After: 60`. The same IP is also capped at **20** of these POSTs per minute. See [security.md](security.md).
+Auth email endpoints (`register`, `resend-verification`, `forgot-password`) enforce a **60 second cooldown** per user. Excess calls return **HTTP 429** with `{ "error": "A verification code was already sent to your email. Please wait 60 seconds, then try again." }` and `Retry-After: 60`. The UI shows that sentence only — never the status code. The same IP is also capped at **20** of these POSTs per minute. See [security.md](security.md).
 
 ## Auth (authenticated)
 

@@ -5,7 +5,7 @@ import { Card } from '../components/Card';
 import { CheckCircle, XCircle, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { toast } from 'sonner';
-import { formatApiError } from '../lib/userFacingError';
+import { formatApiError, userNoticeClass, userNoticeTextClass } from '../lib/userFacingError';
 import type { ApiError } from '../api/client';
 
 export default function Verification() {
@@ -149,8 +149,8 @@ export default function Verification() {
             <Card>
               <form onSubmit={handleVerifyOtp} noValidate className="space-y-5">
                 {otpError && (
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
-                    <p className="text-sm text-red-700 dark:text-red-300">{otpError}</p>
+                  <div className={userNoticeClass(otpError)}>
+                    <p className={userNoticeTextClass(otpError)}>{otpError}</p>
                   </div>
                 )}
                 <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
@@ -250,8 +250,8 @@ export default function Verification() {
             <Card>
               <div className="text-center">
                 {otpError && (
-                  <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                    <p className="text-sm text-red-700">{otpError}</p>
+                  <div className={`mb-4 ${userNoticeClass(otpError)}`}>
+                    <p className={userNoticeTextClass(otpError)}>{otpError}</p>
                   </div>
                 )}
                 <div className="w-16 h-16 rounded-full bg-[#F9FAFD] border-2 border-[#E0E4F7] flex items-center justify-center mx-auto mb-4">

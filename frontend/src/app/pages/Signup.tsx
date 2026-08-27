@@ -8,7 +8,7 @@ import { TermsOfServiceModal } from '../components/TermsOfServiceModal';
 import { PrivacyPolicyModal } from '../components/PrivacyPolicyModal';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
-import { formatApiError } from '../lib/userFacingError';
+import { formatApiError, userNoticeClass, userNoticeTextClass } from '../lib/userFacingError';
 
 type TenantOption = { id: number; name: string; status: string };
 type SignupErrors = {
@@ -188,8 +188,8 @@ export default function Signup() {
         <Card>
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {submitError && (
-              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
-                <p className="text-sm text-red-700 dark:text-red-300">{submitError}</p>
+              <div className={userNoticeClass(submitError)}>
+                <p className={userNoticeTextClass(submitError)}>{submitError}</p>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

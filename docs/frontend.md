@@ -51,7 +51,7 @@ Docker build-arg: `VITE_API_BASE_URL=/api` (same-origin + Nginx proxy).
 - Remember me checked: token + user snapshot in `localStorage`. Unchecked: `sessionStorage` (gone when the browser closes)
 - User snapshot key: `mawrid_auth_user`
 - On **401**, tries `POST /api/auth/refresh` once, then fires `mawrid:auth-expired` and clears storage
-- Auth email screens (verification + forgot password) disable Send/Resend for 60 seconds; HTTP **429** starts the same timer
+- Auth email screens (verification + forgot password) disable Send/Resend for 60 seconds and show a wait message. HTTP **429** is never shown as a status code to the student.
 
 ## UI conventions
 

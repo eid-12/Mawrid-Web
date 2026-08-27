@@ -24,7 +24,7 @@ public class AuthEmailTransactionService {
 
     private static final long EMAIL_SEND_COOLDOWN_SECONDS = 60;
     static final String EMAIL_RATE_LIMIT_MESSAGE =
-            "Please wait 60 seconds before requesting another email.";
+            "A verification code was already sent to your email. Please wait 60 seconds, then try again.";
 
     private final UserRepository userRepository;
     private final UserTokenRepository userTokenRepository;
