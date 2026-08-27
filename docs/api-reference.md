@@ -28,6 +28,8 @@ Refresh uses the HttpOnly cookie `refresh_token` (`credentials: include`).
 
 All other `/api/**` routes require authentication.
 
+Auth email endpoints (`register`, `resend-verification`, `forgot-password`) are **rate-limited**: at most one outbound email per user per 60 seconds. Excess calls return **HTTP 429** with `{ "error": "Please wait 60 seconds before requesting another email." }`. See [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
+
 ## Auth (authenticated)
 
 | Method | Path | Purpose |
@@ -81,7 +83,7 @@ Prefix: `/api/dashboard`
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/api/catalog/equipment` | User catalog |
+| GET | `/api/catalog/equipment` | User catalog (ranked; includes `relevanceScore` and `recommended`) |
 | GET | `/api/catalog/equipment/{id}` | Catalog detail |
 | POST | `/api/tenants/{tenantId}/equipment` | Create equipment |
 | GET | `/api/tenants/{tenantId}/equipment` | College inventory |

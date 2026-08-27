@@ -37,7 +37,7 @@ Each college is a row in `tenants`. Almost every domain table has `tenant_id`.
 
 | Actor | Tenant in JWT (`tid`) | Data they see |
 |-------|----------------------|----------------|
-| USER | Their college | Catalog (own college ranked first), their requests |
+| USER | Their college | Catalog ranked by AI recommendation score (own college demand is one of the signals), their requests |
 | ADMIN | Their college | Inventory, requests, checking for that college only |
 | SUPER_ADMIN | `null` | All colleges and users; global dashboard |
 
@@ -77,4 +77,4 @@ Controller → Service → Repository → Entity / MySQL
                  ↘ EmailService, JwtService, TenantAccess
 ```
 
-Package map: [backend.md](backend.md).
+Package map: [backend.md](backend.md). Catalog ranking and email cooldowns: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).

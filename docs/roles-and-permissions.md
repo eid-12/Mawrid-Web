@@ -16,7 +16,7 @@ Can:
 
 - Register (public form always creates `USER`)
 - Verify email, log in, reset password
-- Browse catalog and item details
+- Browse the **AI-ranked** catalog and item details (Recommended badge on top matches)
 - Create a borrow request for their college
 - View and cancel **pending** requests
 - Update name/phone and change password (email is not editable in the settings UI)

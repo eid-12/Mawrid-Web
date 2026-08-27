@@ -1,16 +1,17 @@
 # Overview
 
-**Mawrid** is a multi-tenant web application for university colleges to lend, borrow, and track lab and classroom equipment.
+**Mawrid System with AI Recommendation and Rate Limiting** is a multi-tenant web application for university colleges to lend, borrow, and track lab and classroom equipment. It is a centralized resource and equipment rental platform for the University of Hail (UOH).
 
-Each college is a **tenant**. Students and faculty (`USER`) request equipment from the catalog. College staff (`ADMIN`) manage inventory, approve requests, and check items in and out. A platform operator (`SUPER_ADMIN`) manages colleges and accounts across the university.
+Each college is a **tenant**. Students and faculty (`USER`) request equipment from a catalog that is **ranked by an AI recommendation score**. College staff (`ADMIN`) manage inventory, approve requests, and check items in and out. A platform operator (`SUPER_ADMIN`) manages colleges and accounts across the university. Auth emails are **rate-limited** (60 second cooldown, HTTP 429).
 
 The product name and UI copy are in English. The intended institution context is the University of Hail (emails such as `@uoh.edu.sa` appear in seed and examples).
 
 ## What the system does
 
 - Public landing, signup, login, email OTP verification, forgot-password OTP
+- **Rate limiting** on outbound auth email (one send per user per 60 seconds)
 - Role-based portals (user / college admin / super admin)
-- Equipment catalog with college-aware ranking
+- Equipment catalog with **AI recommendation** (relevance score, top-3 Recommended badge)
 - Borrow requests with approve / reject / cancel
 - Check-out and check-in (including serial-number scan)
 - College activation / deactivation / removal
@@ -20,13 +21,15 @@ The product name and UI copy are in English. The intended institution context is
 ## What it does not do (yet)
 
 - There is no separate **Instructor** role. Faculty use the same `USER` role as students.
-- AI priority sorting is described in the original design brief as a later phase, not as a live feature.
+- Recommendation is a scored ranking model from borrow history, not a conversational LLM chatbot.
+
+Full write-up: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
 
 ## Tech stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18, Vite 6, TypeScript, Tailwind CSS, React Router, Radix UI, Lucide |
+| Frontend | React 18, Vite 6, TypeScript, Tailwind CSS, React Router, Lucide |
 | Backend | Java 17, Spring Boot 3, Spring Security, Spring Data JPA, JWT |
 | Database | MySQL 8 |
 | Email | SMTP (Resend in production config) |

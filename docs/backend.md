@@ -29,7 +29,7 @@ Default port: **8080**.
 | `EquipmentService` | Equipment and units, quantity sync |
 | `BorrowRequestService` | Create, approve, reject, cancel, search, capacity rules |
 | `CheckTransactionService` | Check-out / in, scan, pending queues |
-| `RecommendationService` | Catalog ranking from recent borrow history |
+| `RecommendationService` | AI catalog ranking from recent borrow history, college demand, and check-outs |
 | `AdminDashboardService` | College KPIs, alerts, activity |
 | `DashboardService` | Global super-admin stats |
 | `ActivityLogService` | Audit rows |
@@ -68,3 +68,5 @@ All seeded accounts share one bcrypt hash (plaintext password is not stored in t
 ## Method security
 
 `@EnableMethodSecurity` is on. Controllers still check roles via `TenantAccess.requireRole` / `requireTenant` in addition to the HTTP security filter chain.
+
+Catalog recommendation and auth email rate limiting: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).

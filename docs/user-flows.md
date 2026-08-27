@@ -14,7 +14,8 @@ flowchart TD
 ```
 
 - OTP type: `REGISTRATION_OTP` (about 10 minutes).
-- Resend: `POST /api/auth/resend-verification` (cooldown applies).
+- Resend: `POST /api/auth/resend-verification`.
+- **Rate limiting:** 60 seconds between auth emails (signup, resend, forgot password). The API returns **429** if the user requests another message too soon. The verification page also disables Resend for 60 seconds.
 - A legacy link flow still exists: `GET /api/auth/verify-email?token=`.
 
 ## Login and session
@@ -31,7 +32,13 @@ flowchart TD
 2. `POST /api/auth/verify-reset-otp` → temporary password emailed.
 3. Alternate: `POST /api/auth/reset-password` with a link token (`PASSWORD_RESET`).
 
-Forgot-password does not reactivate a locked account or skip email verification.
+Forgot-password does not reactivate a locked account or skip email verification. The same **60 second email rate limit** applies as on signup/resend.
+
+## Catalog recommendation
+
+Path: `/user/catalog` → `GET /api/catalog/equipment`
+
+The list is ordered by AI relevance score (personal category, college demand in 30 days, university check-outs). The top three items are flagged `recommended` and shown with a **Recommended** badge. Details: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
 
 ## Borrow lifecycle
 

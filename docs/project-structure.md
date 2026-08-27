@@ -48,7 +48,8 @@ backend/
 │   ├── exception/
 │   ├── repository/
 │   ├── security/         # JWT filter, TenantAccess
-│   ├── service/          # Business rules
+│   ├── service/          # Business rules (incl. RecommendationService, AuthService cooldown)
+
 │   └── util/
 ├── src/main/resources/application.properties
 ├── scripts/              # Occasional SQL maintenance

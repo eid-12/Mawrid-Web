@@ -28,7 +28,7 @@ Docker build-arg: `VITE_API_BASE_URL=/api` (same-origin + Nginx proxy).
 | `/verification`, `/verify-email` | GuestOnly | OTP / email verification |
 | `/reset-password` | Public | Token reset form |
 | `/user/dashboard` | USER | Dashboard |
-| `/user/catalog` | USER | Catalog |
+| `/user/catalog` | USER | Catalog ranked by AI recommendation; **Recommended** badge on top matches |
 | `/user/catalog/:id` | USER | Item details + request |
 | `/user/requests` | USER | My requests |
 | `/user/settings` | USER | Profile & password |
@@ -65,4 +65,7 @@ Docker build-arg: `VITE_API_BASE_URL=/api` (same-origin + Nginx proxy).
 | Routes | `src/app/routes.tsx` |
 | Auth state | `src/app/auth/AuthContext.tsx` |
 | Login | `src/app/pages/Login.tsx` |
+| Catalog UI | `src/app/pages/user/Catalog.tsx` |
 | Nginx | `nginx.conf` |
+
+Catalog ranking and the 60s resend timer: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
