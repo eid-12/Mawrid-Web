@@ -8,6 +8,7 @@ import { Input } from '../../components/Input';
 import { SuccessToast } from '../../components/SuccessToast';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../api/client';
+import { formatApiError } from '../../lib/userFacingError';
 import { useCollegeEligibility } from '../../hooks/useCollegeEligibility';
 import { getEquipmentIcon } from '../../lib/equipmentIconMapper';
 import { addDaysToIsoDate, formatDisplayDate, inclusiveDurationDays, localIsoDate } from '../../lib/dateUtils';
@@ -71,9 +72,9 @@ export default function ItemDetails() {
             .catch(() => setTenantSettings(null));
         }
       })
-      .catch((err: { message?: string }) => {
+      .catch((err: unknown) => {
         setItem(null);
-        setLoadError(err?.message ?? 'Failed to load this item.');
+        setLoadError(formatApiError(err, 'Failed to load this item.'));
       })
       .finally(() => setLoading(false));
   };
@@ -164,9 +165,8 @@ export default function ItemDetails() {
       setToastMessage('Request submitted successfully!');
       setToastVariant('success');
       setShowSuccessToast(true);
-      setTimeout(() => navigate('/user/requests'), 1600);
     } catch (err: unknown) {
-      setToastMessage((err as { message?: string })?.message ?? 'Failed to submit request');
+      setToastMessage(formatApiError(err, 'Failed to submit request'));
       setToastVariant('cancel');
       setShowSuccessToast(true);
     } finally {
@@ -212,7 +212,7 @@ export default function ItemDetails() {
         isOpen={showSuccessToast}
         variant={toastVariant}
         message={toastMessage}
-        duration={2000}
+        duration={3500}
         onClose={() => setShowSuccessToast(false)}
       />
 
@@ -305,7 +305,19 @@ export default function ItemDetails() {
             ) : (
               <form onSubmit={handleRequestSubmit} noValidate className="space-y-4">
                 {!user?.emailVerified && (
-                  <p className="text-sm text-red-600">Verify your email first to submit borrowing requests.</p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      Verify your email first to submit borrowing requests.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => navigate('/verify-email', { state: { email: user?.email } })}
+                    >
+                      Go to verification
+                    </Button>
+                  </div>
                 )}
                 <Input
                   type="date"

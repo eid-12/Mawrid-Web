@@ -8,6 +8,7 @@ import { TermsOfServiceModal } from '../components/TermsOfServiceModal';
 import { PrivacyPolicyModal } from '../components/PrivacyPolicyModal';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
+import { formatApiError } from '../lib/userFacingError';
 
 type TenantOption = { id: number; name: string; status: string };
 type SignupErrors = {
@@ -156,7 +157,7 @@ export default function Signup() {
       });
       navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (e: unknown) {
-      const message = (e as { message?: string })?.message ?? 'Signup failed. Check the console/network tab.';
+      const message = formatApiError(e, 'Signup failed. Please try again.');
       setSubmitError(message);
     } finally {
       setIsSubmitting(false);

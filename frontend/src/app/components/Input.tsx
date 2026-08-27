@@ -31,6 +31,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             type={inputType}
+            aria-invalid={error ? true : undefined}
             className={`w-full h-12 px-4 text-base ${Icon ? 'pl-12' : ''} ${isPassword ? 'pr-12' : ''} bg-input-background border rounded-2xl transition-all duration-200 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:bg-muted disabled:cursor-not-allowed ${error ? 'border-red-500' : 'border-border hover:border-primary/30'} ${className}`}
             {...props}
           />

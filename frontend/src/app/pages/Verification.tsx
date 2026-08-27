@@ -5,6 +5,7 @@ import { Card } from '../components/Card';
 import { CheckCircle, XCircle, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { toast } from 'sonner';
+import { formatApiError } from '../lib/userFacingError';
 
 export default function Verification() {
   const RESEND_COOLDOWN_SECONDS = 60;
@@ -60,7 +61,10 @@ export default function Verification() {
     setStatus('pending');
     verifyEmail(tokenFromQuery)
       .then(() => setStatus('success'))
-      .catch(() => setStatus('error'));
+      .catch((e: unknown) => {
+        setStatus('error');
+        setOtpError(formatApiError(e, 'The verification link is invalid or has expired.'));
+      });
   }, [tokenFromQuery, verifyEmail]);
 
   // OTP flow: when email is in query (from signup redirect), show OTP form
@@ -99,7 +103,7 @@ export default function Verification() {
       toast.success('Email verified successfully! You can now log in.');
       navigate('/login');
     } catch (e: unknown) {
-      setOtpError((e as { message?: string })?.message ?? 'Invalid or expired code');
+      setOtpError(formatApiError(e, 'Invalid or expired code'));
     } finally {
       setIsVerifying(false);
     }
@@ -107,18 +111,17 @@ export default function Verification() {
 
   const handleResend = async () => {
     if (!email || resendBlocked) return;
-    setResent(true);
     try {
       await resendVerification(email);
+      setResent(true);
       startResendCooldown(email);
       setOtp('');
       setOtpError(null);
       toast.success('Verification code sent! Check your email.');
       setTimeout(() => otpInputRef.current?.focus(), 100);
-    } catch (e: unknown) {
-      setOtpError((e as { message?: string })?.message ?? 'Failed to resend');
-    } finally {
       setTimeout(() => setResent(false), 3000);
+    } catch (e: unknown) {
+      setOtpError(formatApiError(e, 'Failed to resend the code. Please try again.'));
     }
   };
 
@@ -210,7 +213,7 @@ export default function Verification() {
                 </div>
                 <h2 className="text-xl font-semibold text-[#0F172A] dark:text-[#F8FAFC] mb-2">Verification Failed</h2>
                 <p className="text-sm text-[#64748B] dark:text-[#94A3B8] mb-6">
-                  The verification link is invalid or has expired. Please request a new verification code.
+                  {otpError || 'The verification link is invalid or has expired. Please request a new verification code.'}
                 </p>
                 {email && (
                   <div className="space-y-3">
@@ -232,7 +235,15 @@ export default function Verification() {
             </Card>
           )}
 
-          {status === 'pending' && !email && (
+          {status === 'pending' && tokenFromQuery && (
+            <Card>
+              <div className="text-center py-6">
+                <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">Verifying your email...</p>
+              </div>
+            </Card>
+          )}
+
+          {status === 'pending' && !email && !tokenFromQuery && (
             <Card>
               <div className="text-center">
                 {otpError && (
@@ -267,7 +278,7 @@ export default function Verification() {
                       toast.success('Verification code sent!');
                       navigate(`/verify-email?email=${encodeURIComponent(val)}`);
                     } catch (err) {
-                      setOtpError((err as { message?: string })?.message ?? 'Failed to send code');
+                      setOtpError(formatApiError(err, 'Failed to send code'));
                     }
                   }}
                   noValidate

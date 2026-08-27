@@ -8,6 +8,8 @@ import { SuccessToast } from '../../components/SuccessToast';
 import { AlertDialog } from '../../components/AlertDialog';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../api/client';
+import { formatApiError } from '../../lib/userFacingError';
+import { PageNotice } from '../../components/PageNotice';
 import { isValidSaudiPhone, maskSaudiPhoneInput, normalizeSaudiPhoneForApi, SAUDI_PHONE_ERROR } from '../../lib/phoneValidation';
 import { useNavigate, useSearchParams } from 'react-router';
 import { COLLEGE_REQUIRED_MESSAGE, useCollegeEligibility } from '../../hooks/useCollegeEligibility';
@@ -39,8 +41,11 @@ export default function Settings() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastVariant, setToastVariant] = useState<'success' | 'cancel'>('success');
   const [passwordMismatchDialog, setPasswordMismatchDialog] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadProfile = () => {
+    setLoadError(null);
     Promise.all([
       api.get<MeResponse>('/api/auth/me'),
       api.get<TenantOption[]>('/api/tenants/public/active'),
@@ -54,8 +59,15 @@ export default function Settings() {
           .filter((tenant) => (tenant.status ?? '').toUpperCase() === 'ACTIVE')
           .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
         setTenantOptions(activeTenants);
+        setProfileLoaded(true);
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        setLoadError(formatApiError(err, 'Failed to load your profile.'));
+      });
+  };
+
+  useEffect(() => {
+    loadProfile();
   }, []);
 
   useEffect(() => {
@@ -76,6 +88,12 @@ export default function Settings() {
 
   const handleNameSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!profileLoaded) {
+      setToastVariant('cancel');
+      setToastMessage('Profile is still loading. Please wait or retry.');
+      setShowSuccessToast(true);
+      return;
+    }
     try {
       await api.put('/api/auth/me', {
         name,
@@ -86,9 +104,9 @@ export default function Settings() {
       setShowSuccessToast(true);
       await refreshProfile();
       navigate('/user/settings', { replace: true });
-    } catch {
+    } catch (err: unknown) {
       setToastVariant('cancel');
-      setToastMessage('Failed to save');
+      setToastMessage(formatApiError(err, 'Failed to save profile'));
       setShowSuccessToast(true);
     }
   };
@@ -109,9 +127,9 @@ export default function Settings() {
       setToastMessage('Phone number updated successfully!');
       setShowSuccessToast(true);
       refreshProfile();
-    } catch {
+    } catch (err: unknown) {
       setToastVariant('cancel');
-      setToastMessage('Failed to save');
+      setToastMessage(formatApiError(err, 'Failed to save phone number'));
       setShowSuccessToast(true);
     }
   };
@@ -135,7 +153,7 @@ export default function Settings() {
       setConfirmPassword('');
     } catch (err: unknown) {
       setToastVariant('cancel');
-      setToastMessage((err as { message?: string })?.message ?? 'Failed to change password');
+      setToastMessage(formatApiError(err, 'Failed to change password'));
       setShowSuccessToast(true);
     }
   };
@@ -196,6 +214,19 @@ export default function Settings() {
         <p className="text-muted-foreground">Manage your profile and security settings</p>
       </div>
 
+      {loadError && (
+        <PageNotice
+          title="Could not load profile"
+          action={
+            <Button size="sm" variant="secondary" onClick={loadProfile}>
+              Retry
+            </Button>
+          }
+        >
+          {loadError}
+        </PageNotice>
+      )}
+
       {shouldShowRestriction && (
         <Card className="border-2 border-amber-200 bg-amber-50">
           <p className="text-sm md:text-base font-medium text-amber-900">
@@ -228,8 +259,8 @@ export default function Settings() {
                   placeholder="Enter your name"
                   required
                 />
-                <Button type="submit">
-                  Save
+                <Button type="submit" disabled={!profileLoaded}>
+                  Save profile
                 </Button>
               </div>
             </div>
@@ -272,9 +303,7 @@ export default function Settings() {
       </Card>
       
       {canAccessCoreFeatures && (
-        <>
-          {/* Phone Number */}
-          <Card>
+        <Card>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8CCDE6] to-[#8393DE] flex items-center justify-center">
                 <Phone className="w-5 h-5 text-white" />
@@ -298,7 +327,8 @@ export default function Settings() {
               </Button>
             </form>
           </Card>
-          
+      )}
+
           {/* Password Change */}
           <Card>
             <div className="flex items-center gap-3 mb-6">
@@ -375,8 +405,6 @@ export default function Settings() {
               </Button>
             </form>
           </Card>
-        </>
-      )}
     </div>
   );
 }

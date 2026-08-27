@@ -57,12 +57,14 @@ function buildApiUrl(path: string): string {
 }
 
 export const AUTH_EXPIRED_EVENT = "mawrid:auth-expired";
+export const SESSION_EXPIRED_NOTICE_KEY = "mawrid_session_expired";
 const AUTH_USER_STORAGE_KEY = "mawrid_auth_user";
 
 function clearAuthSession() {
   setAccessToken(null);
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  window.sessionStorage.setItem(SESSION_EXPIRED_NOTICE_KEY, "1");
   window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
 }
 
@@ -71,12 +73,21 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   headers.set("Content-Type", headers.get("Content-Type") ?? "application/json");
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
-  const res = await fetch(buildApiUrl(path), {
-    ...init,
-    headers,
-    credentials: "include",
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(buildApiUrl(path), {
+      ...init,
+      headers,
+      credentials: "include",
+      cache: "no-store",
+    });
+  } catch {
+    const err: ApiError = {
+      status: 0,
+      message: "Can't reach the server. Check your connection and try again.",
+    };
+    throw err;
+  }
 
   const skipRefresh = /\/api\/auth\/(login|register|forgot-password|verify-|resend-verification|reset-password)/.test(path);
   // Access JWT expired: rotate via HttpOnly refresh cookie, then retry once.
@@ -84,7 +95,10 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
   if (res.status === 401 && retry && !skipRefresh) {
     const refreshed = await tryRefresh();
     if (refreshed) return request<T>(path, init, false);
-    clearAuthSession();
+    if (!getAccessToken()) {
+      const err: ApiError = { status: 401, message: "Your session expired. Please sign in again." };
+      throw err;
+    }
   }
 
   if (!res.ok) {
@@ -116,7 +130,8 @@ async function tryRefresh(): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
     });
     if (!res.ok) {
-      clearAuthSession();
+      // 401/403: refresh cookie is gone. 5xx: keep the current access token.
+      if (res.status === 401 || res.status === 403) clearAuthSession();
       return false;
     }
     const data = (await res.json()) as { accessToken: string };
@@ -124,7 +139,6 @@ async function tryRefresh(): Promise<boolean> {
     setAccessToken(data.accessToken);
     return true;
   } catch {
-    clearAuthSession();
     return false;
   }
 }

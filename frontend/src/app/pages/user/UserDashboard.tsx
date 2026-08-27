@@ -7,6 +7,8 @@ import { Badge } from '../../components/Badge';
 import { Package, Clock, CheckCircle, AlertCircle, Search, FileText, Bell } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../api/client';
+import { formatApiError } from '../../lib/userFacingError';
+import { PageNotice } from '../../components/PageNotice';
 import { formatDistanceToNow } from 'date-fns';
 import { COLLEGE_REQUIRED_MESSAGE, useCollegeEligibility } from '../../hooks/useCollegeEligibility';
 
@@ -47,6 +49,7 @@ export default function UserDashboard() {
   const { user, refreshUserStatus } = useAuth();
   const [requests, setRequests] = useState<BorrowRequestDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { canAccessCoreFeatures, shouldShowRestriction } = useCollegeEligibility();
 
   useEffect(() => {
@@ -56,10 +59,14 @@ export default function UserDashboard() {
 
   useEffect(() => {
     if (!user?.userId) return;
+    setLoadError(null);
     api
       .get<BorrowRequestDto[]>(`/api/users/${user.userId}/borrow-requests`)
       .then(setRequests)
-      .catch(() => setRequests([]))
+      .catch((err: unknown) => {
+        setRequests([]);
+        setLoadError(formatApiError(err, 'Failed to load your requests.'));
+      })
       .finally(() => setLoading(false));
   }, [user?.userId]);
 
@@ -140,6 +147,12 @@ export default function UserDashboard() {
           Welcome back! Here's an overview of your equipment requests.
         </p>
       </div>
+
+      {loadError && (
+        <PageNotice title="Could not load dashboard" action={<Button size="sm" variant="secondary" onClick={() => window.location.reload()}>Retry</Button>}>
+          {loadError}
+        </PageNotice>
+      )}
 
       {shouldShowRestriction && (
         <Card className="mt-4 border border-amber-200 bg-amber-50/90 p-5 md:p-6 rounded-2xl shadow-sm">

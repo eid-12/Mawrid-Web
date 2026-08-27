@@ -113,6 +113,8 @@ export const SuccessToast = ({
   return (
     <div
       className="fixed top-6 left-1/2 z-[9999]"
+      role="status"
+      aria-live="polite"
       style={{
         transform: `translateX(-50%) translateY(${visible ? '0px' : '-20px'})`,
         opacity: visible ? 1 : 0,
@@ -122,14 +124,14 @@ export const SuccessToast = ({
       }}
     >
       <div
-        className="flex items-center gap-3 shadow-lg"
+        className="flex items-start gap-3 shadow-lg dark:shadow-black/40"
         style={{
           backgroundColor: cfg.bg,
           border: `1.5px solid ${cfg.border}`,
           borderRadius: '14px',
-          padding: '10px 18px 10px 14px',
+          padding: '10px 12px 10px 14px',
           minWidth: '230px',
-          maxWidth: '340px',
+          maxWidth: 'min(420px, calc(100vw - 32px))',
         }}
       >
         {/* Icon */}
@@ -174,11 +176,26 @@ export const SuccessToast = ({
 
         {/* Message */}
         <p
-          className="text-sm"
+          className="text-sm leading-snug break-words"
           style={{ color: cfg.textColor, fontWeight: 500 }}
         >
           {message}
         </p>
+        <button
+          type="button"
+          aria-label="Dismiss"
+          onClick={() => {
+            setVisible(false);
+            setTimeout(() => {
+              setRendered(false);
+              onClose?.();
+            }, 200);
+          }}
+          className="ml-1 shrink-0 rounded-md p-1 opacity-70 hover:opacity-100"
+          style={{ color: cfg.textColor }}
+        >
+          <X style={{ width: "14px", height: "14px" }} />
+        </button>
       </div>
     </div>
   );

@@ -152,11 +152,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }>("/api/auth/me");
       setUser(me);
       persistUser(me);
-    } catch {
-      setUser(null);
-      setAccessToken(null);
-      persistUser(null);
-      setError(null);
+    } catch (e) {
+      const err = e as ApiError;
+      // Only drop the session when the token is actually rejected, not on a network blip.
+      if (err?.status === 401 || err?.code === "COLLEGE_REMOVED") {
+        setUser(null);
+        setAccessToken(null);
+        persistUser(null);
+        setError(null);
+      }
     } finally {
       setLoading(false);
     }

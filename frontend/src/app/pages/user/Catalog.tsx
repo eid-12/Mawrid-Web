@@ -11,6 +11,7 @@ import { useCollegeEligibility } from '../../hooks/useCollegeEligibility';
 import { getEquipmentIcon } from '../../lib/equipmentIconMapper';
 import { addDaysToIsoDate, formatDisplayDate, inclusiveDurationDays, localIsoDate } from '../../lib/dateUtils';
 import { useNavigate } from 'react-router';
+import { formatApiError } from '../../lib/userFacingError';
 
 type EquipmentItem = {
   id: number;
@@ -75,7 +76,7 @@ export default function Catalog() {
       .then(setItems)
       .catch((err: { message?: string }) => {
         setItems([]);
-        setLoadError(err?.message ?? 'Failed to load equipment.');
+        setLoadError(formatApiError(err, 'Failed to load equipment.'));
       })
       .finally(() => setLoading(false));
   };
@@ -193,7 +194,7 @@ export default function Catalog() {
       setShowToast(true);
       loadCatalog();
     } catch (err: unknown) {
-      setToastMessage((err as { message?: string })?.message ?? 'Failed to submit request');
+      setToastMessage(formatApiError(err, 'Failed to submit request'));
       setToastVariant('cancel');
       setShowToast(true);
     } finally {
@@ -384,8 +385,6 @@ export default function Catalog() {
             const ItemIcon = getEquipmentIcon(item.name, item.category);
             const status = getStatus(item);
             const availableByStatus = isRequestable(item);
-            const blockedByCollege = !canAccessCoreFeatures || isCollegeInactive;
-            const requestable = availableByStatus && !blockedByCollege;
             const unavailReason = !availableByStatus ? getUnavailabilityReason(item) : '';
             const specs = item.description || 'Equipment';
           return (
@@ -439,14 +438,6 @@ export default function Catalog() {
                     <Button
                       size="sm"
                       className="mt-3 w-full mt-auto"
-                      disabled={blockedByCollege}
-                      title={
-                        blockedByCollege
-                          ? (isCollegeInactive
-                            ? 'Action disabled. Your college is currently deactivated.'
-                            : 'Select an active college in settings to enable requests.')
-                          : undefined
-                      }
                       onClick={(e) => {
                         e.stopPropagation();
                         openRequestModal(item);
@@ -512,7 +503,26 @@ export default function Catalog() {
       )}
 
       {!loading && !loadError && filteredItems.length === 0 && (
-        <Card className="py-12 text-center text-muted-foreground">No equipment found</Card>
+        <Card className="py-12 text-center space-y-3">
+          <p className="text-muted-foreground">
+            {items.length === 0
+              ? 'No equipment is listed yet.'
+              : 'No items match these filters.'}
+          </p>
+          {items.length > 0 && (searchQuery || selectedCollege !== 'all' || selectedStatus !== 'all') ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedCollege('all');
+                setSelectedStatus('all');
+              }}
+            >
+              Clear filters
+            </Button>
+          ) : null}
+        </Card>
       )}
 
       {/* Request Borrowing Modal */}
@@ -535,9 +545,19 @@ export default function Catalog() {
             </div>
             <form onSubmit={handleRequestSubmit} noValidate className="space-y-4">
               {!user?.emailVerified && (
-                <p className="text-sm text-red-600">
-                  Verify your email first to submit borrowing requests.
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    Verify your email first to submit borrowing requests.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => navigate('/verify-email', { state: { email: user?.email } })}
+                  >
+                    Go to verification
+                  </Button>
+                </div>
               )}
               {(() => {
                 const { minStart, maxEnd } = getRequestModalDateConstraints();

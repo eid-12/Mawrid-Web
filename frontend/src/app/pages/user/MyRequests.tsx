@@ -8,6 +8,9 @@ import { AlertDialog } from '../../components/AlertDialog';
 import { SuccessToast } from '../../components/SuccessToast';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../api/client';
+import { formatApiError } from '../../lib/userFacingError';
+import { PageNotice } from '../../components/PageNotice';
+import { Link } from 'react-router';
 
 type BorrowRequestDto = {
   id: number;
@@ -38,6 +41,7 @@ export default function MyRequests() {
   const isCollegeInactive = tenantStatus === 'INACTIVE';
   const [requests, setRequests] = useState<BorrowRequestDto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [cancelRequestId, setCancelRequestId] = useState<number | null>(null);
@@ -49,10 +53,15 @@ export default function MyRequests() {
 
   const fetchRequests = () => {
     if (!user?.userId) return;
+    setLoadError(null);
+    setLoading(true);
     api
       .get<BorrowRequestDto[]>(`/api/users/${user.userId}/borrow-requests`)
       .then(setRequests)
-      .catch(() => setRequests([]))
+      .catch((err: unknown) => {
+        setRequests([]);
+        setLoadError(formatApiError(err, 'Failed to load your requests.'));
+      })
       .finally(() => setLoading(false));
   };
 
@@ -132,7 +141,7 @@ export default function MyRequests() {
       fetchRequests();
       setCancelRequestId(null);
     } catch (err: unknown) {
-      setToastMessage((err as { message?: string })?.message ?? 'Failed to cancel request');
+      setToastMessage(formatApiError(err, 'Failed to cancel request'));
       setToastVariant('cancel');
       setShowToast(true);
     }
@@ -155,6 +164,19 @@ export default function MyRequests() {
         </h1>
         <p className="text-muted-foreground">Track and manage your equipment borrowing requests</p>
       </div>
+
+      {loadError && (
+        <PageNotice
+          title="Could not load requests"
+          action={
+            <Button size="sm" variant="secondary" onClick={fetchRequests}>
+              Retry
+            </Button>
+          }
+        >
+          {loadError}
+        </PageNotice>
+      )}
 
       {/* Search */}
       <Card>
@@ -202,8 +224,19 @@ export default function MyRequests() {
                 </tr>
               ) : paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                    No requests found
+                  <td colSpan={6} className="px-6 py-8 text-center">
+                    {loadError ? (
+                      <p className="text-muted-foreground">Requests could not be loaded.</p>
+                    ) : searchQuery ? (
+                      <p className="text-muted-foreground">No requests match “{searchQuery}”.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-muted-foreground">You haven’t requested any equipment yet.</p>
+                        <Link to="/user/catalog">
+                          <Button size="sm" variant="secondary">Browse catalog</Button>
+                        </Link>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -258,7 +291,6 @@ export default function MyRequests() {
                             icon={X}
                             className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
                             onClick={() => setCancelRequestId(request.id)}
-                            disabled={isCollegeInactive}
                           >
                             Cancel
                           </Button>
@@ -315,7 +347,10 @@ export default function MyRequests() {
 
       {/* Request Detail Modal */}
       {selectedRequestData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
+          onClick={(e) => e.target === e.currentTarget && setSelectedRequest(null)}
+        >
           <Card className="max-w-2xl w-[90vw] sm:w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-6">
               <div>

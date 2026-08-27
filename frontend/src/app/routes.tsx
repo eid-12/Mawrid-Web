@@ -44,12 +44,12 @@ export const router = createBrowserRouter([
       { path: "/login", Component: Login },
       { path: "/signup", Component: Signup },
       { path: "/forgot-password", Component: ForgotPassword },
-      { path: "/verification", Component: Verification },
-      { path: "/verify-email", Component: Verification },
     ],
   },
-  // Email-link page: keep outside GuestOnly so a logged-in tab can still open a reset URL.
+  // Email-link pages: keep outside GuestOnly so a logged-in tab can still open them.
   { path: "/reset-password", Component: ResetPassword },
+  { path: "/verification", Component: Verification },
+  { path: "/verify-email", Component: Verification },
   {
     element: <RequireAuth allowedRoles={["USER"]} />,
     children: [

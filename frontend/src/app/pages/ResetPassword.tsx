@@ -5,6 +5,7 @@ import { Card } from '../components/Card';
 import { Input } from '../components/Input';
 import { ArrowLeft, CheckCircle, Lock } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { formatApiError } from '../lib/userFacingError';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function ResetPassword() {
       await resetPassword(token, newPassword);
       setIsDone(true);
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to reset password.');
+      setError(formatApiError(e, 'Failed to reset password.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -71,6 +72,18 @@ export default function ResetPassword() {
               <Button fullWidth onClick={() => navigate('/login')}>
                 Go to Login
               </Button>
+            </div>
+          ) : !token ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
+                <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">Invalid reset link</p>
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  This page needs a reset token from your email. Request a new code from Forgot password.
+                </p>
+              </div>
+              <Link to="/forgot-password">
+                <Button fullWidth>Forgot password</Button>
+              </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} noValidate className="space-y-5">

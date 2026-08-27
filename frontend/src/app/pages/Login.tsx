@@ -3,9 +3,11 @@ import { useNavigate, Link, useLocation, useSearchParams } from 'react-router';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Card } from '../components/Card';
-import { Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
+import { PageNotice } from '../components/PageNotice';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { dashboardPathForRole, useAuth } from '../auth/AuthContext';
-import type { ApiError } from '../api/client';
+import { SESSION_EXPIRED_NOTICE_KEY, type ApiError } from '../api/client';
+import { formatApiError, SESSION_EXPIRED_MESSAGE } from '../lib/userFacingError';
 
 export default function Login() {
   const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -16,12 +18,18 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [errorTitle, setErrorTitle] = useState('Sign in failed');
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showVerificationWarning, setShowVerificationWarning] = useState(false);
   const { login, error, clearError } = useAuth();
 
   const resetErrors = () => {
     clearError();
     setLocalError(null);
+    setErrorTitle('Sign in failed');
+    setEmailError(null);
+    setPasswordError(null);
     setShowVerificationWarning(false);
   };
 
@@ -30,33 +38,41 @@ export default function Login() {
   }, [location.pathname]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.sessionStorage.getItem(SESSION_EXPIRED_NOTICE_KEY)) {
+      window.sessionStorage.removeItem(SESSION_EXPIRED_NOTICE_KEY);
+      setErrorTitle('Session expired');
+      setLocalError(SESSION_EXPIRED_MESSAGE);
+    }
     const queryError = searchParams.get('error');
     if (queryError) {
       const normalized = queryError.trim().toLowerCase();
       if (normalized === 'access denied.' || normalized === 'access denied') {
-        setLocalError('Please contact the administrator.');
+        setErrorTitle('Access denied');
+        setLocalError('Your college access was removed. Please contact an administrator.');
       } else {
+        setErrorTitle('Sign in blocked');
         setLocalError(queryError);
       }
     }
   }, [searchParams]);
-  
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     resetErrors();
     const trimmedEmail = email.trim();
+    let hasFieldError = false;
     if (!trimmedEmail) {
-      setLocalError('Email is required');
-      return;
-    }
-    if (!EMAIL_REGEX.test(trimmedEmail)) {
-      setLocalError('Please enter a valid email address');
-      return;
+      setEmailError('Email is required');
+      hasFieldError = true;
+    } else if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setEmailError('Please enter a valid email address');
+      hasFieldError = true;
     }
     if (!password) {
-      setLocalError('Password is required');
-      return;
+      setPasswordError('Password is required');
+      hasFieldError = true;
     }
+    if (hasFieldError) return;
     setSubmitting(true);
 
     try {
@@ -67,7 +83,7 @@ export default function Login() {
         .toUpperCase()
         .replace(/^ROLE_/, '');
       if (!['USER', 'ADMIN', 'SUPER_ADMIN'].includes(normalizedRole)) {
-        setLocalError('Unauthorized role returned from server. Please contact support.');
+        setLocalError('This account has an unrecognized role. Please contact support.');
         return;
       }
       const from = (location.state as { from?: string } | null)?.from;
@@ -79,35 +95,33 @@ export default function Login() {
         from && from.startsWith('/') && !from.startsWith('//') && sameRolePath
           ? from
           : dashboardPathForRole(normalizedRole);
-      // Replace history so Back cannot reopen this login page as a fake "already in" session.
       navigate(target, { replace: true });
     } catch (e: unknown) {
       const err = e as ApiError;
       const msg = String(err?.message ?? error ?? '');
       if (err?.code === 'COLLEGE_INACTIVE') {
+        setErrorTitle('College deactivated');
         setLocalError(
-          'Login Access Denied: Your college is currently deactivated. Please contact the Super Admin for assistance.'
+          'Your college is currently deactivated. Please contact the Super Admin for assistance.'
         );
       } else if (err?.code === 'COLLEGE_REMOVED') {
-        setLocalError('Access Denied: Your college has been permanently removed from the system.');
+        setErrorTitle('Access denied');
+        setLocalError('Your college has been permanently removed from the system.');
       } else if (msg.toLowerCase().includes('verify') || msg.toLowerCase().includes('email not verified')) {
         setShowVerificationWarning(true);
       } else if (err?.status === 401 || msg.toLowerCase().includes('invalid email or password')) {
         setLocalError('Invalid email or password.');
-      } else if (msg) {
-        setLocalError(msg);
       } else {
-        setLocalError('Login failed. Please try again.');
+        setLocalError(formatApiError(e, 'Login failed. Please try again.'));
       }
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-card to-background flex items-center justify-center p-4 md:p-6">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-6 md:mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#8CCDE6] to-[#8393DE] flex items-center justify-center">
@@ -118,34 +132,28 @@ export default function Login() {
           <h2 className="text-lg md:text-xl text-foreground">Welcome back</h2>
           <p className="text-sm text-muted-foreground mt-1">Sign in to your account to continue</p>
         </div>
-        
-        {/* Verification Warning */}
+
         {showVerificationWarning && (
-          <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">Account Not Verified</p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
-                Please verify your email before logging in. Check your inbox for the verification link.
-              </p>
+          <PageNotice
+            variant="warning"
+            title="Account not verified"
+            className="mb-6"
+            action={
               <Button variant="secondary" size="sm" onClick={() => navigate('/verify-email', { state: { email } })}>
                 Go to verification
               </Button>
-            </div>
-          </div>
+            }
+          >
+            Please verify your email before logging in. Check your inbox for the 6-digit code.
+          </PageNotice>
         )}
 
         {(localError || error) && !showVerificationWarning && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">Login failed</p>
-              <p className="text-sm text-red-700 dark:text-red-300">{localError ?? error}</p>
-            </div>
-          </div>
+          <PageNotice title={errorTitle} className="mb-6">
+            {localError ?? error}
+          </PageNotice>
         )}
-        
-        {/* Login Card */}
+
         <Card>
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <Input
@@ -154,37 +162,39 @@ export default function Login() {
               placeholder="example@email.com"
               value={email}
               onChange={(e) => {
-                if (error || localError || showVerificationWarning) resetErrors();
+                if (error || localError || showVerificationWarning || emailError) resetErrors();
                 setEmail(e.target.value);
               }}
               icon={Mail}
               required
+              error={emailError ?? undefined}
             />
-            
+
             <Input
               type="password"
               label="Password"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => {
-                if (error || localError || showVerificationWarning) resetErrors();
+                if (error || localError || showVerificationWarning || passwordError) resetErrors();
                 setPassword(e.target.value);
               }}
               icon={Lock}
               required
+              error={passwordError ?? undefined}
             />
-            
+
             <div className="flex justify-end">
               <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                 Forgot password?
               </Link>
             </div>
-            
+
             <Button type="submit" fullWidth icon={ArrowRight} iconPosition="right" disabled={submitting}>
               {submitting ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}

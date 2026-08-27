@@ -5,6 +5,7 @@ import { Input } from '../components/Input';
 import { Card } from '../components/Card';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { formatApiError } from '../lib/userFacingError';
 
 type Step = 'email' | 'otp' | 'success';
 
@@ -37,7 +38,7 @@ export default function ForgotPassword() {
       setOtp('');
       setTimeout(() => otpInputRef.current?.focus(), 100);
     } catch (e: unknown) {
-      setError((e as { message?: string })?.message ?? 'Failed to send code');
+      setError(formatApiError(e, 'Failed to send code'));
     } finally {
       setIsSubmitting(false);
     }
@@ -55,7 +56,7 @@ export default function ForgotPassword() {
       await verifyOtpAndResetPassword(email, otp);
       setStep('success');
     } catch (e: unknown) {
-      setError((e as { message?: string })?.message ?? 'Invalid or expired code');
+      setError(formatApiError(e, 'Invalid or expired code'));
     } finally {
       setIsSubmitting(false);
     }
@@ -63,7 +64,6 @@ export default function ForgotPassword() {
 
   const handleTryAnotherEmail = () => {
     setStep('email');
-    setEmail('');
     setOtp('');
     setError(null);
   };
@@ -147,8 +147,17 @@ export default function ForgotPassword() {
               <Button type="submit" fullWidth disabled={isSubmitting || otp.length !== 6}>
                 {isSubmitting ? 'Verifying...' : 'Verify Code'}
               </Button>
-              <Button type="button" variant="secondary" fullWidth onClick={handleTryAnotherEmail} disabled={isSubmitting}>
-                Try Another Email
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                onClick={handleSendCode}
+                disabled={isSubmitting}
+              >
+                Resend code
+              </Button>
+              <Button type="button" variant="ghost" fullWidth onClick={handleTryAnotherEmail} disabled={isSubmitting}>
+                Use a different email
               </Button>
             </form>
             <div className="mt-6">
