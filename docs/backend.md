@@ -69,4 +69,4 @@ All seeded accounts share one bcrypt hash (plaintext password is not stored in t
 
 `@EnableMethodSecurity` is on. Controllers still check roles via `TenantAccess.requireRole` / `requireTenant` in addition to the HTTP security filter chain.
 
-Catalog recommendation and auth email rate limiting: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
+Catalog recommendation: [ai-recommendation.md](ai-recommendation.md).

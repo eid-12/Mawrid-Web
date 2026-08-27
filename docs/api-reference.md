@@ -28,7 +28,7 @@ Refresh uses the HttpOnly cookie `refresh_token` (`credentials: include`).
 
 All other `/api/**` routes require authentication.
 
-Auth email endpoints (`register`, `resend-verification`, `forgot-password`) are **rate-limited**: at most one outbound email per user per 60 seconds. Excess calls return **HTTP 429** with `{ "error": "Please wait 60 seconds before requesting another email." }`. See [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
+Auth email endpoints (`register`, `resend-verification`, `forgot-password`) enforce a **60 second cooldown** per user. Excess calls return **HTTP 429** with `{ "error": "Please wait 60 seconds before requesting another email." }`. See [security.md](security.md).
 
 ## Auth (authenticated)
 

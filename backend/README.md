@@ -1,6 +1,6 @@
 # Mawrid Backend (Spring Boot)
 
-REST API and business logic for **Mawrid System with AI Recommendation and Rate Limiting**.
+REST API and business logic for **Mawrid System with AI Recommendation**.
 
 The catalog endpoint ranks equipment with a relevance score. Auth email endpoints (`register`, `resend-verification`, `forgot-password`) return **HTTP 429** if the same user requests another message within 60 seconds.
 
@@ -95,6 +95,6 @@ Generated artifact:
 ## Related Docs
 
 - Full system docs: [`../docs/README.md`](../docs/README.md)
-- AI recommendation and rate limiting: [`../docs/ai-recommendation-and-rate-limiting.md`](../docs/ai-recommendation-and-rate-limiting.md)
+- AI recommendation: [`../docs/ai-recommendation.md`](../docs/ai-recommendation.md)
 - Project root: [`../README.md`](../README.md)
 - Frontend guide: [`../frontend/README.md`](../frontend/README.md)

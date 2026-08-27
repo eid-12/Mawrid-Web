@@ -1,6 +1,6 @@
 # Mawrid documentation
 
-This folder describes **Mawrid System with AI Recommendation and Rate Limiting**: a university equipment lending platform for the University of Hail (UOH), including how catalog ranking and auth email cooldowns work, how data is isolated per college, and how the frontend, backend, database, security, and deployment fit together.
+This folder describes **Mawrid System with AI Recommendation**: a university equipment lending platform for the University of Hail (UOH), including how catalog ranking works, how data is isolated per college, and how the frontend, backend, database, security, and deployment fit together.
 
 Live site: [https://mawrid.cloudbase.website](https://mawrid.cloudbase.website)  
 Source: [https://github.com/eid-12/Mawrid-Web](https://github.com/eid-12/Mawrid-Web)
@@ -10,7 +10,7 @@ Source: [https://github.com/eid-12/Mawrid-Web](https://github.com/eid-12/Mawrid-
 | # | File | Contents |
 |---|------|----------|
 | 1 | [overview.md](overview.md) | Product goal, features, tech stack |
-| 2 | [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md) | Catalog ranking scores and 60s email rate limiting |
+| 2 | [ai-recommendation.md](ai-recommendation.md) | Catalog ranking scores and Recommended badge |
 | 3 | [architecture.md](architecture.md) | System diagram, multi-tenancy, request path |
 | 4 | [project-structure.md](project-structure.md) | Repository folders and important files |
 | 5 | [roles-and-permissions.md](roles-and-permissions.md) | USER, ADMIN, SUPER_ADMIN |

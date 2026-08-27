@@ -1,7 +1,7 @@
 
 # Mawrid Frontend
 
-Frontend client for **Mawrid System with AI Recommendation and Rate Limiting** (User, Admin, and Super Admin portals).
+Frontend client for **Mawrid System with AI Recommendation** (User, Admin, and Super Admin portals).
 
 The student catalog shows AI-ranked equipment with a **Recommended** badge. Verification and password-reset screens respect a 60 second email cooldown.
 
@@ -76,7 +76,7 @@ Main files:
 ## Related Docs
 
 - Full system docs: [`../docs/README.md`](../docs/README.md)
-- AI recommendation and rate limiting: [`../docs/ai-recommendation-and-rate-limiting.md`](../docs/ai-recommendation-and-rate-limiting.md)
+- AI recommendation: [`../docs/ai-recommendation.md`](../docs/ai-recommendation.md)
 - Project root: [`../README.md`](../README.md)
 - Backend API: [`../backend/README.md`](../backend/README.md)
   

@@ -1,15 +1,14 @@
 # Overview
 
-**Mawrid System with AI Recommendation and Rate Limiting** is a multi-tenant web application for university colleges to lend, borrow, and track lab and classroom equipment. It is a centralized resource and equipment rental platform for the University of Hail (UOH).
+**Mawrid System with AI Recommendation** is a multi-tenant web application for university colleges to lend, borrow, and track lab and classroom equipment. It is a centralized resource and equipment rental platform for the University of Hail (UOH).
 
-Each college is a **tenant**. Students and faculty (`USER`) request equipment from a catalog that is **ranked by an AI recommendation score**. College staff (`ADMIN`) manage inventory, approve requests, and check items in and out. A platform operator (`SUPER_ADMIN`) manages colleges and accounts across the university. Auth emails are **rate-limited** (60 second cooldown, HTTP 429).
+Each college is a **tenant**. Students and faculty (`USER`) request equipment from a catalog that is **ranked by an AI recommendation score**. College staff (`ADMIN`) manage inventory, approve requests, and check items in and out. A platform operator (`SUPER_ADMIN`) manages colleges and accounts across the university.
 
 The product name and UI copy are in English. The intended institution context is the University of Hail (emails such as `@uoh.edu.sa` appear in seed and examples).
 
 ## What the system does
 
 - Public landing, signup, login, email OTP verification, forgot-password OTP
-- **Rate limiting** on outbound auth email (one send per user per 60 seconds)
 - Role-based portals (user / college admin / super admin)
 - Equipment catalog with **AI recommendation** (relevance score, top-3 Recommended badge)
 - Borrow requests with approve / reject / cancel
@@ -23,7 +22,7 @@ The product name and UI copy are in English. The intended institution context is
 - There is no separate **Instructor** role. Faculty use the same `USER` role as students.
 - Recommendation is a scored ranking model from borrow history, not a conversational LLM chatbot.
 
-Full write-up: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
+Full write-up: [ai-recommendation.md](ai-recommendation.md).
 
 ## Tech stack
 

@@ -68,4 +68,4 @@ Docker build-arg: `VITE_API_BASE_URL=/api` (same-origin + Nginx proxy).
 | Catalog UI | `src/app/pages/user/Catalog.tsx` |
 | Nginx | `nginx.conf` |
 
-Catalog ranking and the 60s resend timer: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
+Catalog ranking: [ai-recommendation.md](ai-recommendation.md).

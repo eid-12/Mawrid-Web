@@ -77,4 +77,4 @@ Controller → Service → Repository → Entity / MySQL
                  ↘ EmailService, JwtService, TenantAccess
 ```
 
-Package map: [backend.md](backend.md). Catalog ranking and email cooldowns: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
+Package map: [backend.md](backend.md). Catalog ranking: [ai-recommendation.md](ai-recommendation.md).

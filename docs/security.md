@@ -44,12 +44,10 @@ Planting a fake token in `localStorage` is not enough: `GET /api/auth/me` fails 
 
 ## Email and OTP
 
-- **Rate limiting:** 60 second cooldown between outbound auth emails per user (`users.last_sent_at`). Repeated signup / resend / forgot-password calls return **HTTP 429**.
+- **Email cooldown:** 60 seconds between outbound auth emails per user (`users.last_sent_at`). Repeated signup / resend / forgot-password calls return **HTTP 429**.
 - The verification page also shows a 60s resend timer in the browser; the API cooldown is authoritative.
 - OTP and reset tokens stored as hashes in `user_tokens`.
 - If `MAIL_PASSWORD` is empty, the API still starts; sending is skipped (`EmailService`).
-
-Details: [ai-recommendation-and-rate-limiting.md](ai-recommendation-and-rate-limiting.md).
 
 ## Known deployment notes
 

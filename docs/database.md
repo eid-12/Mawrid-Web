@@ -34,7 +34,7 @@ erDiagram
 |-------|--------|--------|
 | `tenants` | Tenant | `code` unique; `status` string (`ACTIVE` / `INACTIVE`) |
 | `tenant_settings` | TenantSettings | PK `tenant_id`; borrow rules |
-| `users` | User | Unique `email`; `role`; optional `tenant_id`; `last_sent_at` for email rate limiting |
+| `users` | User | Unique `email`; `role`; optional `tenant_id`; `last_sent_at` for email cooldown |
 | `equipment` | Equipment | Quantities, category, availability window |
 | `equipment_units` | EquipmentUnit | `serialNo`, `assetTag`, unit `status` |
 | `borrow_requests` | BorrowRequest | Dates, status, decision fields |
