@@ -93,7 +93,7 @@ export default function AdminLayout() {
   
   const handleLogout = async () => {
     await authLogout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const handleNameChange = async (newName: string) => {

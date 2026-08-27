@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Card } from '../components/Card';
 import { Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
-import { useAuth } from '../auth/AuthContext';
+import { dashboardPathForRole, useAuth } from '../auth/AuthContext';
 import type { ApiError } from '../api/client';
 
 export default function Login() {
@@ -61,31 +61,26 @@ export default function Login() {
 
     try {
       const loggedInUser = await login(trimmedEmail, password);
-      console.log('Login Response:', loggedInUser);
       setShowVerificationWarning(false);
       const normalizedRole = String(loggedInUser?.role ?? '')
         .trim()
         .toUpperCase()
         .replace(/^ROLE_/, '');
-      console.log('Resolved login role:', normalizedRole);
+      if (!['USER', 'ADMIN', 'SUPER_ADMIN'].includes(normalizedRole)) {
+        setLocalError('Unauthorized role returned from server. Please contact support.');
+        return;
+      }
       const from = (location.state as { from?: string } | null)?.from;
       const sameRolePath =
         (normalizedRole === 'SUPER_ADMIN' && (from?.startsWith('/superadmin') || from?.startsWith('/super-admin'))) ||
         (normalizedRole === 'ADMIN' && from?.startsWith('/admin')) ||
         (normalizedRole === 'USER' && from?.startsWith('/user'));
-      if (from && from.startsWith('/') && !from.startsWith('//') && sameRolePath) {
-        navigate(from);
-      } else if (normalizedRole === 'SUPER_ADMIN') {
-        navigate('/superadmin/dashboard');
-      } else if (normalizedRole === 'ADMIN') {
-        navigate('/admin/dashboard');
-      } else if (normalizedRole === 'USER') {
-        navigate('/user/dashboard');
-      } else {
-        setLocalError('Unauthorized role returned from server. Please contact support.');
-      }
+      const target =
+        from && from.startsWith('/') && !from.startsWith('//') && sameRolePath
+          ? from
+          : dashboardPathForRole(normalizedRole);
+      navigate(target, { replace: true });
     } catch (e: unknown) {
-      console.log('Login submit error:', e);
       const err = e as ApiError;
       const msg = String(err?.message ?? error ?? '');
       if (err?.code === 'COLLEGE_INACTIVE') {

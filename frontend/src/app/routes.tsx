@@ -9,6 +9,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Verification from "./pages/Verification";
 import NotFound from "./pages/NotFound";
 import { RequireAuth } from "./auth/RequireAuth";
+import { GuestOnly } from "./auth/GuestOnly";
 
 // User portal
 import UserLayout from "./layouts/UserLayout";
@@ -35,13 +36,18 @@ import UserManagement from "./pages/superadmin/UserManagement";
 import SuperAdminSettings from "./pages/superadmin/SuperAdminSettings";
 
 export const router = createBrowserRouter([
-  { path: "/", Component: Landing },
-  { path: "/login", Component: Login },
-  { path: "/signup", Component: Signup },
-  { path: "/forgot-password", Component: ForgotPassword },
+  {
+    element: <GuestOnly />,
+    children: [
+      { path: "/", Component: Landing },
+      { path: "/login", Component: Login },
+      { path: "/signup", Component: Signup },
+      { path: "/forgot-password", Component: ForgotPassword },
+      { path: "/verification", Component: Verification },
+      { path: "/verify-email", Component: Verification },
+    ],
+  },
   { path: "/reset-password", Component: ResetPassword },
-  { path: "/verification", Component: Verification },
-  { path: "/verify-email", Component: Verification },
   {
     element: <RequireAuth allowedRoles={["USER"]} />,
     children: [

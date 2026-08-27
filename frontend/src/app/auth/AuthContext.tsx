@@ -1,7 +1,17 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-import { api, ApiError, AUTH_EXPIRED_EVENT, getAccessToken, setAccessToken } from "../api/client";
+import { api, ApiError, AUTH_EXPIRED_EVENT, getAccessToken, reloadAccessTokenFromStorage, setAccessToken } from "../api/client";
 
 export type Role = "USER" | "ADMIN" | "SUPER_ADMIN";
+
+export function dashboardPathForRole(role: Role | string | undefined): string {
+  const normalized = String(role ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/^ROLE_/, "");
+  if (normalized === "SUPER_ADMIN") return "/superadmin/dashboard";
+  if (normalized === "ADMIN") return "/admin/dashboard";
+  return "/user/dashboard";
+}
 
 export type AuthUser = {
   userId: number;
@@ -35,7 +45,7 @@ type AuthState = {
   forgotPassword: (email: string) => Promise<{ message: string }>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
   verifyOtpAndResetPassword: (email: string, otp: string) => Promise<void>;
-  hydrate: () => Promise<void>;
+  hydrate: (options?: { silent?: boolean }) => Promise<void>;
   refreshProfile: () => Promise<void>;
   refreshUserStatus: () => Promise<void>;
 };
@@ -64,7 +74,9 @@ function persistUser(user: AuthUser | null) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => loadStoredUser());
+  const [user, setUser] = useState<AuthUser | null>(() =>
+    getAccessToken() ? loadStoredUser() : null
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,11 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: string;
         emailVerified: boolean;
       }>("/api/auth/login", { email, password });
-      console.log("Login Response:", data);
-
       setAccessToken(data.accessToken);
       const tokenSaved = Boolean(getAccessToken());
-      console.log("Access token saved:", tokenSaved);
       if (!tokenSaved) {
         throw new Error("Authentication token was not stored correctly.");
       }
@@ -110,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return loggedInUser;
     } catch (e) {
       const err = e as ApiError;
-      console.log("Login Error:", err);
       setError(err.message ?? "Login failed");
       throw e;
     } finally {
@@ -118,9 +126,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function hydrate() {
-    setLoading(true);
-    setError(null);
+  async function hydrate(options?: { silent?: boolean }) {
+    if (!options?.silent) {
+      setLoading(true);
+      setError(null);
+    }
+    if (!getAccessToken()) {
+      setUser(null);
+      persistUser(null);
+      setLoading(false);
+      return;
+    }
     try {
       const me = await api.get<{
         userId: number;
@@ -251,6 +267,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
     return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+  }, []);
+
+  React.useEffect(() => {
+    const syncFromStorage = () => {
+      reloadAccessTokenFromStorage();
+      if (!getAccessToken()) {
+        setUser(null);
+        persistUser(null);
+      }
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      syncFromStorage();
+      if (event.persisted && getAccessToken()) {
+        void hydrate({ silent: true });
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") syncFromStorage();
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (
+        event.key === "mawrid_access_token" ||
+        event.key === AUTH_USER_STORAGE_KEY ||
+        event.key === null
+      ) {
+        syncFromStorage();
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("popstate", syncFromStorage);
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("popstate", syncFromStorage);
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

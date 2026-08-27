@@ -26,6 +26,13 @@ export function getAccessToken() {
   return accessToken;
 }
 
+/** Re-read the token after bfcache/back-forward so in-memory state matches storage. */
+export function reloadAccessTokenFromStorage() {
+  if (typeof window === "undefined") return accessToken;
+  accessToken = window.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  return accessToken;
+}
+
 const viteEnv = ((import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {});
 const baseUrl = (viteEnv.VITE_API_BASE_URL as string | undefined)?.trim() ?? "";
 if (!baseUrl) {
@@ -68,6 +75,7 @@ async function request<T>(path: string, init: RequestInit = {}, retry = true): P
     ...init,
     headers,
     credentials: "include",
+    cache: "no-store",
   });
 
   const skipRefresh = /\/api\/auth\/(login|register|forgot-password|verify-|resend-verification|reset-password)/.test(path);
