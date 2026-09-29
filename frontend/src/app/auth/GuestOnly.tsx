@@ -7,7 +7,7 @@ export function GuestOnly() {
   const { user, loading } = useAuth();
   const token = reloadAccessTokenFromStorage() ?? getAccessToken();
 
-  if (user && token) {
+  if (!loading && user && token) {
     return <Navigate to={dashboardPathForRole(user.role)} replace />;
   }
 

@@ -7,7 +7,6 @@ import {
   AUTH_EXPIRED_EVENT,
   getAccessToken,
   persistAuthUserSnapshot,
-  readAuthUserSnapshot,
   reloadAccessTokenFromStorage,
   REMEMBER_ME_PREF_KEY,
   setAccessToken,
@@ -66,25 +65,13 @@ type AuthState = {
 
 const Ctx = createContext<AuthState | undefined>(undefined);
 
-function loadStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = readAuthUserSnapshot();
-    if (!raw) return null;
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
-  }
-}
-
 function persistUser(user: AuthUser | null) {
   persistAuthUserSnapshot(user ? JSON.stringify(user) : null);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() =>
-    getAccessToken() ? loadStoredUser() : null
-  );
+  // Browser storage is untrusted. Only a successful server response grants access.
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,11 +147,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistUser(me);
     } catch (e) {
       const err = e as ApiError;
-      // Only drop the session when the token is actually rejected, not on a network blip.
-      if (err?.status === 401 || err?.code === "COLLEGE_REMOVED") {
-        setUser(null);
+      // Fail closed even on network/server errors; retain the token only for a retry.
+      setUser(null);
+      persistUser(null);
+      if (err?.status === 401 || err?.status === 403) {
         setAccessToken(null);
-        persistUser(null);
         setError(null);
       }
     } finally {
@@ -187,7 +174,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(me);
       persistUser(me);
     } catch {
-      // Ignore - profile fetch failed (e.g. logged out)
+      setUser(null);
+      persistUser(null);
     }
   }
 
