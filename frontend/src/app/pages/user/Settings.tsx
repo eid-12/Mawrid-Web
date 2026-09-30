@@ -22,8 +22,6 @@ type MeResponse = {
   tenantId?: number | null;
   tenantName?: string | null;
 };
-type TenantOption = { id: number; name: string; code?: string | null; status?: string | null };
-
 export default function Settings() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
@@ -31,8 +29,6 @@ export default function Settings() {
   const { canAccessCoreFeatures, shouldShowRestriction } = useCollegeEligibility();
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [tenantOptions, setTenantOptions] = useState<TenantOption[]>([]);
-  const [selectedTenantId, setSelectedTenantId] = useState<number | ''>('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,19 +42,11 @@ export default function Settings() {
 
   const loadProfile = () => {
     setLoadError(null);
-    Promise.all([
-      api.get<MeResponse>('/api/auth/me'),
-      api.get<TenantOption[]>('/api/tenants/public/active'),
-    ])
-      .then(([me, tenants]) => {
+    api.get<MeResponse>('/api/auth/me')
+      .then((me) => {
         setName(me.name ?? '');
         const raw = me.phone ?? '';
         setPhoneNumber(raw ? maskSaudiPhoneInput(raw) : '');
-        setSelectedTenantId(me.tenantId ?? '');
-        const activeTenants = (tenants ?? [])
-          .filter((tenant) => (tenant.status ?? '').toUpperCase() === 'ACTIVE')
-          .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
-        setTenantOptions(activeTenants);
         setProfileLoaded(true);
       })
       .catch((err: unknown) => {
@@ -97,7 +85,6 @@ export default function Settings() {
     try {
       await api.put('/api/auth/me', {
         name,
-        tenantId: selectedTenantId === '' ? undefined : selectedTenantId,
       });
       setToastVariant('success');
       setToastMessage('Changes saved successfully!');
@@ -263,23 +250,6 @@ export default function Settings() {
                   Save profile
                 </Button>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-heading)' }}>
-                College
-              </label>
-              <select
-                value={selectedTenantId}
-                onChange={(e) => setSelectedTenantId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full px-4 py-3 bg-input-background border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/50"
-              >
-                <option value="">Select college</option>
-                {tenantOptions.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.name?.trim() || tenant.code?.trim() || `College #${tenant.id}`}
-                  </option>
-                ))}
-              </select>
             </div>
           </form>
           

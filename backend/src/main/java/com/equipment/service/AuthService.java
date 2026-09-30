@@ -3,7 +3,6 @@ package com.equipment.service;
 import com.equipment.dto.auth.AuthDtos;
 import com.equipment.entity.UserRole;
 import com.equipment.entity.RefreshToken;
-import com.equipment.entity.Tenant;
 import com.equipment.entity.User;
 import com.equipment.entity.UserToken;
 import com.equipment.exception.AccountInactiveException;
@@ -11,7 +10,6 @@ import com.equipment.exception.CollegeDeactivatedException;
 import com.equipment.exception.CollegeRemovedException;
 import com.equipment.exception.EmailNotVerifiedException;
 import com.equipment.repository.RefreshTokenRepository;
-import com.equipment.repository.TenantRepository;
 import com.equipment.repository.UserRepository;
 import com.equipment.repository.UserTokenRepository;
 import com.equipment.security.AppUserPrincipal;
@@ -47,7 +45,6 @@ public class AuthService {
             "Access Denied: Your college has been permanently removed from the system.";
 
     private final UserRepository userRepository;
-    private final TenantRepository tenantRepository;
     private final UserTokenRepository userTokenRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
@@ -306,14 +303,8 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         if (request.getName() != null) user.setName(request.getName());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
-        if (request.getTenantId() != null) {
-            Tenant tenant = tenantRepository.findById(request.getTenantId())
-                    .orElseThrow(() -> new IllegalArgumentException("College not found: " + request.getTenantId()));
-            if (!"ACTIVE".equalsIgnoreCase(tenant.getStatus())) {
-                throw new IllegalArgumentException("Selected college is not active.");
-            }
-            user.setTenant(tenant);
-        }
+        // College membership is managed by the super-admin user-management API.
+        // Never trust a tenant id supplied through a self-service profile update.
         userRepository.save(user);
     }
 
