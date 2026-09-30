@@ -186,16 +186,34 @@ public class AuthService {
             throw new IllegalArgumentException("Refresh token expired");
         }
 
-        // Rotate: revoke old and issue new
-        existing.setRevokedAt(Instant.now());
         User user = existing.getUser();
+        if (isCollegeRemovedAccount(user)) {
+            throw new CollegeRemovedException(COLLEGE_REMOVED_MESSAGE);
+        }
+        boolean refreshSuperAdmin = UserRole.SUPER_ADMIN.equals(user.getRole());
+        if (!refreshSuperAdmin && !Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new EmailNotVerifiedException();
+        }
+        if (!refreshSuperAdmin && !Boolean.TRUE.equals(user.getIsActive())) {
+            throw new AccountInactiveException();
+        }
+        if (!refreshSuperAdmin
+                && UserRole.ADMIN.equals(user.getRole())
+                && user.getTenant() != null
+                && !"ACTIVE".equalsIgnoreCase(user.getTenant().getStatus())) {
+            throw new CollegeDeactivatedException(
+                    "Your college is currently deactivated."
+            );
+        }
+
+        // Validate first, then rotate. A blocked account must never receive a replacement token.
+        existing.setRevokedAt(Instant.now());
         user.setLastActiveAt(Instant.now());
         userRepository.save(user);
         boolean rememberMe = !Boolean.FALSE.equals(existing.getRememberMe());
         RefreshIssued next = issueRefreshToken(user, httpRequest, rememberMe);
         refreshTokenRepository.save(existing);
 
-        // link chain (optional)
         RefreshToken nextEntity = refreshTokenRepository.findByTokenHash(CryptoUtil.sha256Hex(next.rawToken()))
                 .orElse(null);
         if (nextEntity != null) {
@@ -203,21 +221,7 @@ public class AuthService {
             refreshTokenRepository.save(existing);
         }
 
-        User refreshUser = existing.getUser();
-        if (isCollegeRemovedAccount(refreshUser)) {
-            throw new CollegeRemovedException(COLLEGE_REMOVED_MESSAGE);
-        }
-        boolean refreshSuperAdmin = UserRole.SUPER_ADMIN.equals(refreshUser.getRole());
-        if (!refreshSuperAdmin
-                && UserRole.ADMIN.equals(refreshUser.getRole())
-                && refreshUser.getTenant() != null
-                && !"ACTIVE".equalsIgnoreCase(refreshUser.getTenant().getStatus())) {
-            throw new CollegeDeactivatedException(
-                    "Your college is currently deactivated."
-            );
-        }
-
-        AppUserPrincipal principal = new AppUserPrincipal(refreshUser);
+        AppUserPrincipal principal = new AppUserPrincipal(user);
         String access = jwtService.issueAccessToken(principal);
         return new RefreshRotation(access, next.rawToken(), rememberMe);
     }

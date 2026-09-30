@@ -5,6 +5,7 @@ import com.equipment.entity.User;
 import com.equipment.entity.UserRole;
 import com.equipment.repository.UserRepository;
 import com.equipment.security.TenantAccess;
+import com.equipment.security.AppUserPrincipal;
 import com.equipment.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Map;
@@ -84,9 +87,23 @@ public class UserController {
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<UserSummary> getById(@PathVariable Long id) {
+    public ResponseEntity<UserSummary> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AppUserPrincipal principal) {
         return userRepository.findById(id)
-                .map(u -> ResponseEntity.ok(toSummary(u)))
+                .map(u -> {
+                    boolean self = principal != null && principal.getUserId().equals(id);
+                    boolean superAdmin = TenantAccess.hasRole(UserRole.SUPER_ADMIN);
+                    boolean sameTenantAdmin = principal != null
+                            && TenantAccess.hasRole(UserRole.ADMIN)
+                            && principal.getTenantId() != null
+                            && u.getTenant() != null
+                            && principal.getTenantId().equals(u.getTenant().getId());
+                    if (!self && !superAdmin && !sameTenantAdmin) {
+                        throw new AccessDeniedException("Access denied");
+                    }
+                    return ResponseEntity.ok(toSummary(u));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 

@@ -29,6 +29,7 @@ public class BorrowRequestController {
             @PathVariable Long tenantId,
             @Valid @RequestBody CreateBorrowRequestDto dto) {
         TenantAccess.requireTenant(tenantId);
+        TenantAccess.requireRole(UserRole.ADMIN);
         BorrowRequestDto created = borrowRequestService.createRequest(tenantId, dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -64,6 +65,7 @@ public class BorrowRequestController {
     @GetMapping("/{id}")
     public ResponseEntity<BorrowRequestDto> getById(@PathVariable Long tenantId, @PathVariable Long id) {
         TenantAccess.requireTenant(tenantId);
+        TenantAccess.requireRole(UserRole.ADMIN);
         BorrowRequestDto dto = borrowRequestService.getById(id);
         if (dto.getTenantId() != null && !dto.getTenantId().equals(tenantId)) {
             throw new IllegalArgumentException("Request not found");

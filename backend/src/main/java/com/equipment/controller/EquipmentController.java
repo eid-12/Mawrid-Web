@@ -117,12 +117,18 @@ public class EquipmentController {
 
     @GetMapping("/equipment/{equipmentId}/units")
     public ResponseEntity<List<EquipmentUnitDto>> listUnitsByEquipment(@PathVariable Long equipmentId) {
+        TenantAccess.requireRole(UserRole.ADMIN);
+        EquipmentDto equipment = equipmentService.getEquipmentById(equipmentId);
+        TenantAccess.requireTenant(equipment.getTenantId());
         return ResponseEntity.ok(equipmentService.getUnitsByEquipment(equipmentId));
     }
 
     @GetMapping("/equipment-units/{id}")
     public ResponseEntity<EquipmentUnitDto> getUnit(@PathVariable Long id) {
-        return ResponseEntity.ok(equipmentService.getUnitById(id));
+        TenantAccess.requireRole(UserRole.ADMIN);
+        EquipmentUnitDto unit = equipmentService.getUnitById(id);
+        TenantAccess.requireTenant(unit.getTenantId());
+        return ResponseEntity.ok(unit);
     }
 
     @PutMapping("/equipment-units/{id}")
@@ -130,12 +136,18 @@ public class EquipmentController {
             @PathVariable Long id,
             @Valid @RequestBody CreateEquipmentUnitRequest request) {
         TenantAccess.requireRole(UserRole.ADMIN);
+        EquipmentUnitDto existing = equipmentService.getUnitById(id);
+        TenantAccess.requireTenant(existing.getTenantId());
+        request.setTenantId(existing.getTenantId());
+        request.setEquipmentId(existing.getEquipmentId());
         return ResponseEntity.ok(equipmentService.updateUnit(id, request));
     }
 
     @DeleteMapping("/equipment-units/{id}")
     public ResponseEntity<Void> deleteUnit(@PathVariable Long id) {
         TenantAccess.requireRole(UserRole.ADMIN);
+        EquipmentUnitDto existing = equipmentService.getUnitById(id);
+        TenantAccess.requireTenant(existing.getTenantId());
         equipmentService.deleteUnit(id);
         return ResponseEntity.noContent().build();
     }

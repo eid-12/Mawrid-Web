@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,7 +31,7 @@ public class UserBorrowRequestController {
             @AuthenticationPrincipal AppUserPrincipal principal
     ) {
         if (principal == null || !principal.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Forbidden");
+            throw new AccessDeniedException("Access denied");
         }
         BorrowRequestDto created = borrowRequestService.createRequestByUser(userId, dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -43,7 +44,7 @@ public class UserBorrowRequestController {
     ) {
         if (!TenantAccess.hasRole(UserRole.ADMIN) && !TenantAccess.hasRole(UserRole.SUPER_ADMIN)) {
             if (principal == null || !principal.getUserId().equals(userId)) {
-                throw new IllegalArgumentException("Forbidden");
+                throw new AccessDeniedException("Access denied");
             }
         }
         return ResponseEntity.ok(borrowRequestService.getByUser(userId));
@@ -56,7 +57,7 @@ public class UserBorrowRequestController {
             @AuthenticationPrincipal AppUserPrincipal principal
     ) {
         if (principal == null || !principal.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("Forbidden");
+            throw new AccessDeniedException("Access denied");
         }
         return ResponseEntity.ok(borrowRequestService.cancel(requestId, userId));
     }

@@ -3,6 +3,8 @@ package com.equipment.security;
 import com.equipment.entity.UserRole;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 
 public final class TenantAccess {
 
@@ -13,7 +15,7 @@ public final class TenantAccess {
     public static AppUserPrincipal principal() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !(auth.getPrincipal() instanceof AppUserPrincipal p)) {
-            throw new IllegalArgumentException("Unauthenticated");
+            throw new AuthenticationCredentialsNotFoundException("Authentication required");
         }
         return p;
     }
@@ -23,13 +25,13 @@ public final class TenantAccess {
         // Super-admin has no college; everyone else must match the path tenantId.
         if (hasRole(UserRole.SUPER_ADMIN)) return;
         if (p.getTenantId() == null || !p.getTenantId().equals(tenantId)) {
-            throw new IllegalArgumentException("Forbidden tenant access");
+            throw new AccessDeniedException("Forbidden tenant access");
         }
     }
 
     public static void requireRole(UserRole role) {
         if (!hasRole(role)) {
-            throw new IllegalArgumentException("Forbidden");
+            throw new AccessDeniedException("Forbidden");
         }
     }
 
@@ -50,7 +52,7 @@ public final class TenantAccess {
 
     private static UserRole parseRole(String role) {
         if (role == null || role.isBlank()) {
-            throw new IllegalArgumentException("Role is required");
+            throw new AccessDeniedException("Forbidden");
         }
         String normalized = role.trim().toUpperCase();
         if ("SUPERADMIN".equals(normalized)) {
@@ -59,7 +61,7 @@ public final class TenantAccess {
         try {
             return UserRole.valueOf(normalized);
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Forbidden");
+            throw new AccessDeniedException("Forbidden");
         }
     }
 }

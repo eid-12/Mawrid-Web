@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { useAuth } from './AuthContext';
-import { ApiError, api } from '../api/client';
+import { api } from '../api/client';
 
 type TenantStatusResponse = {
   tenantId?: number | null;
@@ -31,10 +31,10 @@ export function RequireActiveAdminCollege() {
         if (!cancelled) {
           setHasTenant(true);
         }
-      } catch (err: unknown) {
-        const status = (err as ApiError | undefined)?.status;
+      } catch (_err: unknown) {
         if (!cancelled) {
-          setHasTenant(status !== 403);
+          // Fail closed: do not render an admin portal whose college could not be verified.
+          setHasTenant(false);
         }
       } finally {
         if (!cancelled) {
