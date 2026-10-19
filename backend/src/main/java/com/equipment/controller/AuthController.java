@@ -14,6 +14,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -28,6 +29,9 @@ public class AuthController {
     private static final String REFRESH_COOKIE = "refresh_token";
 
     private final AuthService authService;
+
+    @Value("${app.cookie.secure:true}")
+    private boolean secureCookie;
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody AuthDtos.RegisterRequest request) {
@@ -143,10 +147,10 @@ public class AuthController {
 
     private static final int REFRESH_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
-    private static void setRefreshCookie(HttpServletResponse response, String rawToken, boolean rememberMe) {
+    private void setRefreshCookie(HttpServletResponse response, String rawToken, boolean rememberMe) {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(REFRESH_COOKIE, rawToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(secureCookie)
                 .path("/")
                 .sameSite("Lax");
         if (rememberMe) {
@@ -155,10 +159,10 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, builder.build().toString());
     }
 
-    private static void clearRefreshCookie(HttpServletResponse response) {
+    private void clearRefreshCookie(HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE, "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(secureCookie)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(0)

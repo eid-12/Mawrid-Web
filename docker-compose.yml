@@ -31,7 +31,8 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       FRONTEND_URL: http://localhost:3000
-      APP_JWT_SECRET: ${APP_JWT_SECRET:-change-this-in-production}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-local-development-only-change-before-deploying-2026}
+      APP_COOKIE_SECURE: "false"
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
     ports:
       - "8080:8080"

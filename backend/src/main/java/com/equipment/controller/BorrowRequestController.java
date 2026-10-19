@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.equipment.security.AppUserPrincipal;
 
 import java.util.Arrays;
 import java.util.List;
@@ -77,21 +79,25 @@ public class BorrowRequestController {
     public ResponseEntity<BorrowRequestDto> approve(
             @PathVariable Long tenantId,
             @PathVariable Long requestId,
-            @RequestBody(required = false) DecisionRequestDto dto) {
+            @RequestBody(required = false) DecisionRequestDto dto,
+            @AuthenticationPrincipal AppUserPrincipal principal) {
         TenantAccess.requireTenant(tenantId);
         TenantAccess.requireRole(UserRole.ADMIN);
         if (dto == null) dto = new DecisionRequestDto();
-        return ResponseEntity.ok(borrowRequestService.approve(requestId, dto));
+        dto.setDecidedByAdminId(principal.getUserId());
+        return ResponseEntity.ok(borrowRequestService.approve(tenantId, requestId, dto));
     }
 
     @PostMapping("/{requestId}/reject")
     public ResponseEntity<BorrowRequestDto> reject(
             @PathVariable Long tenantId,
             @PathVariable Long requestId,
-            @RequestBody(required = false) DecisionRequestDto dto) {
+            @RequestBody(required = false) DecisionRequestDto dto,
+            @AuthenticationPrincipal AppUserPrincipal principal) {
         TenantAccess.requireTenant(tenantId);
         TenantAccess.requireRole(UserRole.ADMIN);
         if (dto == null) dto = new DecisionRequestDto();
-        return ResponseEntity.ok(borrowRequestService.reject(requestId, dto));
+        dto.setDecidedByAdminId(principal.getUserId());
+        return ResponseEntity.ok(borrowRequestService.reject(tenantId, requestId, dto));
     }
 }

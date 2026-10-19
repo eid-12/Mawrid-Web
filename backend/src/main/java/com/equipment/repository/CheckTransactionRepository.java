@@ -13,6 +13,8 @@ public interface CheckTransactionRepository extends JpaRepository<CheckTransacti
 
     List<CheckTransaction> findByRequestId(Long requestId);
 
+    List<CheckTransaction> findByRequestIdAndTenantId(Long requestId, Long tenantId);
+
     List<CheckTransaction> findByTenantId(Long tenantId);
 
     @Modifying

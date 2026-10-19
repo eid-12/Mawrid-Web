@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.Instant;
@@ -36,6 +37,8 @@ public final class AuthDtos {
         private String phone;
 
         @NotBlank
+        @Size(min = 8, max = 128)
+        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z\\d]).+$", message = "Password must include uppercase, lowercase, number, and special character")
         private String password;
     }
 
@@ -112,6 +115,8 @@ public final class AuthDtos {
         @NotBlank
         private String currentPassword;
         @NotBlank
+        @Size(min = 8, max = 128)
+        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z\\d]).+$", message = "Password must include uppercase, lowercase, number, and special character")
         private String newPassword;
     }
 
@@ -153,6 +158,8 @@ public final class AuthDtos {
         @NotBlank
         private String token;
         @NotBlank
+        @Size(min = 8, max = 128)
+        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z\\d]).+$", message = "Password must include uppercase, lowercase, number, and special character")
         private String newPassword;
     }
 

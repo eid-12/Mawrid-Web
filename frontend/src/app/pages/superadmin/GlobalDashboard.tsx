@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Card } from '../../components/Card';
 import { StatCard } from '../../components/StatCard';
 import { Building2, Users, Package, TrendingUp, Activity } from 'lucide-react';
@@ -17,11 +17,9 @@ type DashboardStats = {
 type CollegeStatRow = { name: string; users: number; equipment: number; requests: number };
 type RecentActivityItem = { id: number; college: string; action: string; details: string; time: string };
 type SystemHealth = {
-  averageResponseTimePercent: number;
-  averageResponseTimeLabel: string;
-  databasePerformancePercent: number;
-  databasePerformanceLabel: string;
-  apiUptimePercent: number;
+  databaseReachable: boolean;
+  databaseResponseMs: number;
+  applicationUptimeSeconds: number;
 };
 
 function fetchDashboard() {
@@ -38,35 +36,46 @@ export default function GlobalDashboard() {
   const [collegeData, setCollegeData] = useState<CollegeStatRow[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([]);
   const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const requestSequence = useRef(0);
+
+  const loadDashboard = useCallback(async () => {
+    const sequence = ++requestSequence.current;
+    setLoadError(null);
+    try {
+      const [s, c, r, h] = await fetchDashboard();
+      if (sequence !== requestSequence.current) return;
+      setStats(s);
+      setCollegeData(c);
+      setRecentActivity((r ?? []).slice(0, 5));
+      setSystemHealth(h);
+    } catch {
+      if (sequence === requestSequence.current) setLoadError('Could not load dashboard data.');
+    } finally {
+      if (sequence === requestSequence.current) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchDashboard()
-      .then(([s, c, r, h]) => {
-        setStats(s);
-        setCollegeData(c);
-        setRecentActivity((r ?? []).slice(0, 5));
-        setSystemHealth(h);
-      })
-      .catch(() => {});
-  }, []);
+    void loadDashboard();
+    return () => { requestSequence.current += 1; };
+  }, [loadDashboard]);
 
   // Refetch when tab becomes visible (e.g. after deactivating user in User Management)
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchDashboard()
-          .then(([s, c, r, h]) => {
-            setStats(s);
-            setCollegeData(c);
-            setRecentActivity((r ?? []).slice(0, 5));
-            setSystemHealth(h);
-          })
-          .catch(() => {});
+        void loadDashboard();
       }
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => document.removeEventListener('visibilitychange', onVisibilityChange);
-  }, []);
+  }, [loadDashboard]);
+
+  const uptimeLabel = systemHealth
+    ? `${Math.floor(systemHealth.applicationUptimeSeconds / 3600)}h ${Math.floor((systemHealth.applicationUptimeSeconds % 3600) / 60)}m`
+    : '–';
 
   const displayStats = [
     { icon: Building2, label: 'Total Colleges', value: stats?.totalColleges?.toString() ?? '–', color: 'indigo' as const },
@@ -81,6 +90,16 @@ export default function GlobalDashboard() {
         <h1 className="text-3xl font-semibold text-[#0F172A] mb-2">Global Dashboard</h1>
         <p className="text-[#64748B]">System-wide overview and analytics across all colleges</p>
       </div>
+
+      {loadError && (
+        <Card className="border border-red-200 bg-red-50">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-red-700">{loadError}</p>
+            <button type="button" onClick={() => void loadDashboard()} className="text-sm font-medium text-red-700 underline">Retry</button>
+          </div>
+        </Card>
+      )}
+      {loading && <p className="text-sm text-[#64748B]" role="status">Loading dashboard…</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {displayStats.map((stat) => (
@@ -135,29 +154,29 @@ export default function GlobalDashboard() {
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-[#64748B]">Average Response Time</span>
-                <span className="text-sm font-medium text-green-600">{systemHealth?.averageResponseTimeLabel ?? '–'}</span>
+                <span className="text-sm text-[#64748B]">Database Status</span>
+                <span className={`text-sm font-medium ${systemHealth?.databaseReachable ? 'text-green-600' : 'text-red-600'}`}>{systemHealth ? (systemHealth.databaseReachable ? 'Connected' : 'Unavailable') : '–'}</span>
               </div>
               <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-[#8CCDE6] to-[#8393DE]" style={{ width: `${systemHealth?.averageResponseTimePercent ?? 0}%` }} />
+                <div className={`h-full ${systemHealth?.databaseReachable ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: systemHealth ? '100%' : '0%' }} />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-[#64748B]">Database Performance</span>
-                <span className="text-sm font-medium text-green-600">{systemHealth?.databasePerformanceLabel ?? '–'}</span>
+                <span className="text-sm text-[#64748B]">Database Response</span>
+                <span className="text-sm font-medium text-[#334155]">{systemHealth ? `${systemHealth.databaseResponseMs} ms` : '–'}</span>
               </div>
               <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-[#8CCDE6] to-[#8393DE]" style={{ width: `${systemHealth?.databasePerformancePercent ?? 0}%` }} />
+                <div className="h-full bg-gradient-to-r from-[#8CCDE6] to-[#8393DE]" style={{ width: systemHealth ? `${Math.max(5, 100 - Math.min(systemHealth.databaseResponseMs, 100))}%` : '0%' }} />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-[#64748B]">API Uptime</span>
-                <span className="text-sm font-medium text-green-600">{systemHealth?.apiUptimePercent ?? '–'}%</span>
+                <span className="text-sm text-[#64748B]">Application Uptime</span>
+                <span className="text-sm font-medium text-green-600">{uptimeLabel}</span>
               </div>
               <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-[#8CCDE6] to-[#8393DE]" style={{ width: `${systemHealth?.apiUptimePercent ?? 0}%` }} />
+                <div className="h-full bg-gradient-to-r from-[#8CCDE6] to-[#8393DE]" style={{ width: systemHealth ? '100%' : '0%' }} />
               </div>
             </div>
           </div>

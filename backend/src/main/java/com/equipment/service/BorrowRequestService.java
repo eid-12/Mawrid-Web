@@ -54,11 +54,14 @@ public class BorrowRequestService {
     public BorrowRequestDto createRequest(Long tenantId, CreateBorrowRequestDto dto) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
-        User user = userRepository.findById(dto.getUserId())
+        Equipment equipment = equipmentRepository.findByIdForUpdate(dto.getEquipmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + dto.getEquipmentId()));
+        if (equipment.getTenant() == null || !tenantId.equals(equipment.getTenant().getId())) {
+            throw new IllegalArgumentException("Equipment does not belong to tenant");
+        }
+        User user = userRepository.findByIdForUpdate(dto.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + dto.getUserId()));
         ensureUserHasActiveCollege(user);
-        Equipment equipment = equipmentRepository.findById(dto.getEquipmentId())
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + dto.getEquipmentId()));
         ensureTenantIsActive(tenant);
         ensureCapacityAvailable(equipment);
         if (!Boolean.TRUE.equals(user.getEmailVerified())) {
@@ -98,11 +101,11 @@ public class BorrowRequestService {
      */
     @Transactional
     public BorrowRequestDto createRequestByUser(Long userId, com.equipment.dto.UserCreateBorrowRequestDto dto) {
-        User user = userRepository.findById(userId)
+        Equipment equipment = equipmentRepository.findByIdForUpdate(dto.getEquipmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + dto.getEquipmentId()));
+        User user = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         ensureUserHasActiveCollege(user);
-        Equipment equipment = equipmentRepository.findById(dto.getEquipmentId())
-                .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + dto.getEquipmentId()));
         Tenant tenant = equipment.getTenant();
         ensureTenantIsActive(tenant);
         ensureCapacityAvailable(equipment);
@@ -181,6 +184,12 @@ public class BorrowRequestService {
                 .collect(Collectors.toList());
     }
 
+    public List<BorrowRequestDto> getByUserAndTenant(Long userId, Long tenantId) {
+        return borrowRequestRepository.findByUserIdAndTenantIdOrderByCreatedAtDesc(userId, tenantId).stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     public BorrowRequestDto getById(Long id) {
         BorrowRequest req = borrowRequestRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Borrow request not found: " + id));
@@ -188,14 +197,16 @@ public class BorrowRequestService {
     }
 
     @Transactional
-    public BorrowRequestDto approve(Long requestId, DecisionRequestDto dto) {
-        BorrowRequest req = borrowRequestRepository.findById(requestId)
+    public BorrowRequestDto approve(Long tenantId, Long requestId, DecisionRequestDto dto) {
+        BorrowRequest req = borrowRequestRepository.findByIdAndTenantIdForUpdate(requestId, tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Borrow request not found: " + requestId));
         ensureTenantIsActive(req.getTenant());
         if (!"PENDING".equals(req.getStatus())) {
             throw new IllegalArgumentException("Request is not pending");
         }
-        ensureCapacityForApprove(req.getEquipment());
+        Equipment lockedEquipment = equipmentRepository.findByIdForUpdate(req.getEquipment().getId())
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+        ensureCapacityForApprove(lockedEquipment);
         req.setStatus("APPROVED");
         req.setDecisionReason(dto.getDecisionReason());
         req.setDecidedByAdminId(dto.getDecidedByAdminId());
@@ -222,8 +233,8 @@ public class BorrowRequestService {
     }
 
     @Transactional
-    public BorrowRequestDto reject(Long requestId, DecisionRequestDto dto) {
-        BorrowRequest req = borrowRequestRepository.findById(requestId)
+    public BorrowRequestDto reject(Long tenantId, Long requestId, DecisionRequestDto dto) {
+        BorrowRequest req = borrowRequestRepository.findByIdAndTenantIdForUpdate(requestId, tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Borrow request not found: " + requestId));
         ensureTenantIsActive(req.getTenant());
         if (!"PENDING".equals(req.getStatus())) {

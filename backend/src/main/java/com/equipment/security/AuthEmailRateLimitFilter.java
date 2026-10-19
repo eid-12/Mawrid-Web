@@ -15,6 +15,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Caps burst traffic on public email endpoints from one client IP.
@@ -32,6 +33,7 @@ public class AuthEmailRateLimitFilter extends OncePerRequestFilter {
     private static final long WINDOW_MS = 60_000L;
 
     private final Map<String, Deque<Long>> hitsByIp = new ConcurrentHashMap<>();
+    private final AtomicLong lastCleanup = new AtomicLong();
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -60,6 +62,7 @@ public class AuthEmailRateLimitFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String ip = clientIp(request);
         long now = System.currentTimeMillis();
+        cleanupExpiredEntries(now);
         Deque<Long> hits = hitsByIp.computeIfAbsent(ip, key -> new ArrayDeque<>());
         synchronized (hits) {
             while (!hits.isEmpty() && now - hits.peekFirst() > WINDOW_MS) {
@@ -78,6 +81,22 @@ public class AuthEmailRateLimitFilter extends OncePerRequestFilter {
             hits.addLast(now);
         }
         filterChain.doFilter(request, response);
+    }
+
+    private void cleanupExpiredEntries(long now) {
+        long previous = lastCleanup.get();
+        if (now - previous < WINDOW_MS || !lastCleanup.compareAndSet(previous, now)) {
+            return;
+        }
+        hitsByIp.entrySet().removeIf(entry -> {
+            Deque<Long> hits = entry.getValue();
+            synchronized (hits) {
+                while (!hits.isEmpty() && now - hits.peekFirst() > WINDOW_MS) {
+                    hits.pollFirst();
+                }
+                return hits.isEmpty();
+            }
+        });
     }
 
     private static String clientIp(HttpServletRequest request) {

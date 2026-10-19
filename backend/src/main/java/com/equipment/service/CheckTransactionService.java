@@ -47,10 +47,10 @@ public class CheckTransactionService {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
         ensureTenantIsActive(tenant);
-        BorrowRequest borrowRequest = borrowRequestRepository.findById(request.getRequestId())
-                .orElseThrow(() -> new IllegalArgumentException("Borrow request not found: " + request.getRequestId()));
-        EquipmentUnit unit = equipmentUnitRepository.findById(request.getEquipmentUnitId())
+        EquipmentUnit unit = equipmentUnitRepository.findByIdForUpdate(request.getEquipmentUnitId())
                 .orElseThrow(() -> new IllegalArgumentException("Equipment unit not found: " + request.getEquipmentUnitId()));
+        BorrowRequest borrowRequest = borrowRequestRepository.findByIdAndTenantIdForUpdate(request.getRequestId(), tenantId)
+                .orElseThrow(() -> new IllegalArgumentException("Borrow request not found: " + request.getRequestId()));
         if (!borrowRequest.getTenant().getId().equals(tenantId) || !unit.getTenant().getId().equals(tenantId)) {
             throw new IllegalArgumentException("Request or unit does not belong to tenant");
         }
@@ -141,8 +141,11 @@ public class CheckTransactionService {
         return toDto(tx);
     }
 
-    public List<CheckTransactionDto> getByRequestId(Long requestId) {
-        return checkTransactionRepository.findByRequestId(requestId).stream()
+    public List<CheckTransactionDto> getByRequestId(Long tenantId, Long requestId) {
+        if (borrowRequestRepository.findByIdAndTenantId(requestId, tenantId).isEmpty()) {
+            throw new IllegalArgumentException("Borrow request not found: " + requestId);
+        }
+        return checkTransactionRepository.findByRequestIdAndTenantId(requestId, tenantId).stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
     }

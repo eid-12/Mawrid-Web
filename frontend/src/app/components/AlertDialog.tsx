@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 
@@ -23,6 +23,17 @@ export const AlertDialog = ({
   cancelText = 'Cancel',
   variant = 'danger',
 }: AlertDialogProps) => {
+  const titleId = useId();
+  const descriptionId = useId();
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const variantStyles = {
@@ -46,9 +57,11 @@ export const AlertDialog = ({
       />
 
       {/* Dialog */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
         {/* Close Button */}
         <button
+          type="button"
+          aria-label="Close dialog"
           onClick={onClose}
           className="absolute top-4 right-4 text-[#64748B] hover:text-[#0F172A] transition-colors"
         >
@@ -75,8 +88,8 @@ export const AlertDialog = ({
         </div>
 
         {/* Content */}
-        <h3 className="text-xl font-semibold text-[#0F172A] mb-2">{title}</h3>
-        <p className="text-[#64748B] mb-6">{description}</p>
+        <h3 id={titleId} className="text-xl font-semibold text-[#0F172A] mb-2">{title}</h3>
+        <p id={descriptionId} className="text-[#64748B] mb-6">{description}</p>
 
         {/* Actions */}
         <div className="flex items-center gap-3">

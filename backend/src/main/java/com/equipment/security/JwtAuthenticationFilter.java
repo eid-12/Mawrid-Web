@@ -18,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Date;
 
 @Component
 @RequiredArgsConstructor
@@ -45,6 +46,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 User dbUser = userRepository.findByEmail(email).orElse(null);
+                Date issuedAt = claims.getIssuedAt();
+                if (dbUser != null && dbUser.getPasswordChangedAt() != null
+                        && (issuedAt == null || issuedAt.toInstant().isBefore(dbUser.getPasswordChangedAt()))) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"Session invalidated by password change\"}");
+                    return;
+                }
                 // College wiped: user is detached (no tenant) and marked inactive.
                 if (dbUser != null
                         && dbUser.getTenant() == null

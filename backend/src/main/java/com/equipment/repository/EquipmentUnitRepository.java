@@ -4,6 +4,9 @@ import com.equipment.entity.EquipmentUnit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +15,10 @@ import java.util.Optional;
 
 @Repository
 public interface EquipmentUnitRepository extends JpaRepository<EquipmentUnit, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from EquipmentUnit u where u.id = :id")
+    Optional<EquipmentUnit> findByIdForUpdate(@Param("id") Long id);
 
     @Query("SELECT COUNT(e) FROM EquipmentUnit e WHERE e.tenant.status = 'ACTIVE'")
     long countByTenantStatusActive();

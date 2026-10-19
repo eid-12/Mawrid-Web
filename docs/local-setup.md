@@ -32,7 +32,8 @@ Optional env:
 
 ```text
 FRONTEND_URL=http://localhost:5173
-APP_JWT_SECRET=dev-only-change-me
+APP_JWT_SECRET=dev-only-change-me-at-least-32-characters
+APP_COOKIE_SECURE=false
 MAIL_PASSWORD=   # leave empty to skip real email
 ```
 

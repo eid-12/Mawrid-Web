@@ -7,6 +7,7 @@ import com.equipment.entity.User;
 import com.equipment.entity.UserRole;
 import com.equipment.repository.TenantRepository;
 import com.equipment.repository.UserRepository;
+import com.equipment.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +30,7 @@ public class UserService {
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     private static final Sort DEFAULT_SORT = Sort.by(
             Sort.Order.desc("isActive"),
@@ -130,6 +132,7 @@ public class UserService {
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             user.setPasswordChangedAt(java.time.Instant.now());
+            refreshTokenRepository.revokeAllActiveByUserId(user.getId(), java.time.Instant.now());
         }
         user = userRepository.save(user);
 
@@ -190,6 +193,10 @@ public class UserService {
         private UserRole role;
         private Long tenantId;
         private Boolean isActive;
+        @jakarta.validation.constraints.Pattern(
+                regexp = "^$|^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z\\d]).{8,128}$",
+                message = "Password must be 8-128 characters and include uppercase, lowercase, number, and special character"
+        )
         private String password;  // optional - only update if provided
     }
 }

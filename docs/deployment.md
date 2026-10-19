@@ -39,6 +39,7 @@ At minimum:
 - `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`
 - `FRONTEND_URL=https://mawrid.cloudbase.website`
 - `APP_JWT_SECRET` (strong, unique)
+- `APP_COOKIE_SECURE=true` (required for the HTTPS production site)
 - `MAIL_PASSWORD` (or `SPRING_MAIL_PASSWORD`) for OTP mail
 
 Without mail credentials the API process still starts; verification emails will not send.

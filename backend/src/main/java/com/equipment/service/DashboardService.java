@@ -12,6 +12,8 @@ import com.equipment.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
+import java.lang.management.ManagementFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +27,7 @@ public class DashboardService {
     private final EquipmentRepository equipmentRepository;
     private final EquipmentUnitRepository equipmentUnitRepository;
     private final BorrowRequestRepository borrowRequestRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     public DashboardStats getStats() {
         // Active entities only
@@ -85,12 +88,19 @@ public class DashboardService {
     }
 
     public SystemHealth getSystemHealth() {
+        long started = System.nanoTime();
+        boolean databaseReachable;
+        try {
+            Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+            databaseReachable = Integer.valueOf(1).equals(result);
+        } catch (RuntimeException ex) {
+            databaseReachable = false;
+        }
+        long databaseResponseMs = Math.max(0, (System.nanoTime() - started) / 1_000_000);
         return SystemHealth.builder()
-                .averageResponseTimePercent(95)
-                .averageResponseTimeLabel("Excellent")
-                .databasePerformancePercent(88)
-                .databasePerformanceLabel("Good")
-                .apiUptimePercent(99.9)
+                .databaseReachable(databaseReachable)
+                .databaseResponseMs(databaseResponseMs)
+                .applicationUptimeSeconds(ManagementFactory.getRuntimeMXBean().getUptime() / 1000)
                 .build();
     }
 
@@ -121,10 +131,8 @@ public class DashboardService {
     @lombok.Data
     @lombok.Builder
     public static class SystemHealth {
-        private int averageResponseTimePercent;
-        private String averageResponseTimeLabel;
-        private int databasePerformancePercent;
-        private String databasePerformanceLabel;
-        private double apiUptimePercent;
+        private boolean databaseReachable;
+        private long databaseResponseMs;
+        private long applicationUptimeSeconds;
     }
 }

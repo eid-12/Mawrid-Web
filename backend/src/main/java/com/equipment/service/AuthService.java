@@ -9,6 +9,8 @@ import com.equipment.exception.AccountInactiveException;
 import com.equipment.exception.CollegeDeactivatedException;
 import com.equipment.exception.CollegeRemovedException;
 import com.equipment.exception.EmailNotVerifiedException;
+import com.equipment.exception.InvalidRefreshTokenException;
+import com.equipment.exception.EmailDeliveryException;
 import com.equipment.repository.RefreshTokenRepository;
 import com.equipment.repository.UserRepository;
 import com.equipment.repository.UserTokenRepository;
@@ -93,6 +95,7 @@ public class AuthService {
             emailService.sendVerificationOtpEmailBlocking(pending.email(), pending.plainOtp());
         } catch (RuntimeException ex) {
             log.warn("Registration verification email failed for {}: {}", pending.email(), ex.getMessage());
+            throw new EmailDeliveryException();
         }
     }
 
@@ -119,7 +122,7 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(AuthDtos.LoginRequest request, HttpServletRequest httpRequest) {
-        String rawPassword = (request.getPassword() != null ? request.getPassword() : "").trim();
+        String rawPassword = request.getPassword() != null ? request.getPassword() : "";
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), rawPassword)
         );
@@ -171,16 +174,16 @@ public class AuthService {
     @Transactional
     public RefreshRotation refresh(String rawRefreshToken, HttpServletRequest httpRequest) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
-            throw new IllegalArgumentException("Missing refresh token");
+            throw new InvalidRefreshTokenException();
         }
         String hash = CryptoUtil.sha256Hex(rawRefreshToken);
         RefreshToken existing = refreshTokenRepository.findByTokenHash(hash)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+                .orElseThrow(InvalidRefreshTokenException::new);
         if (existing.getRevokedAt() != null) {
-            throw new IllegalArgumentException("Refresh token revoked");
+            throw new InvalidRefreshTokenException();
         }
         if (existing.getExpiresAt().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Refresh token expired");
+            throw new InvalidRefreshTokenException();
         }
 
         User user = existing.getUser();
@@ -265,13 +268,20 @@ public class AuthService {
             emailService.sendVerificationOtpEmailBlocking(issued.email(), issued.otp());
         } catch (RuntimeException ex) {
             log.warn("Resend verification email failed for {}: {}", issued.email(), ex.getMessage());
+            throw new EmailDeliveryException();
         }
     }
 
     public void forgotPassword(String email) {
         AuthEmailTransactionService.IssuedEmailOtp issued =
                 authEmailTransactionService.issueForgotPasswordOtp(email);
-        emailService.sendOtpEmailBlocking(issued.email(), issued.otp());
+        if (issued == null) return;
+        try {
+            emailService.sendOtpEmailBlocking(issued.email(), issued.otp());
+        } catch (RuntimeException ex) {
+            log.warn("Password reset email failed for {}: {}", issued.email(), ex.getMessage());
+            throw new EmailDeliveryException();
+        }
     }
 
     @Transactional
@@ -292,6 +302,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(tempPassword));
         user.setPasswordChangedAt(Instant.now());
         userRepository.save(user);
+        refreshTokenRepository.revokeAllActiveByUserId(user.getId(), Instant.now());
         legacyUserColumnSyncService.syncAfterUserPersist(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);
@@ -318,6 +329,7 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setPasswordChangedAt(Instant.now());
         userRepository.save(user);
+        refreshTokenRepository.revokeAllActiveByUserId(user.getId(), Instant.now());
         legacyUserColumnSyncService.syncAfterUserPersist(user);
     }
 
@@ -334,7 +346,9 @@ public class AuthService {
         }
         User user = token.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setPasswordChangedAt(Instant.now());
         userRepository.save(user);
+        refreshTokenRepository.revokeAllActiveByUserId(user.getId(), Instant.now());
         legacyUserColumnSyncService.syncAfterUserPersist(user);
         token.setUsedAt(Instant.now());
         userTokenRepository.save(token);

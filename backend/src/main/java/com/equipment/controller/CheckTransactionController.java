@@ -29,9 +29,7 @@ public class CheckTransactionController {
             @Valid @RequestBody CreateCheckTransactionRequest request) {
         TenantAccess.requireTenant(tenantId);
         TenantAccess.requireRole(UserRole.ADMIN);
-        if (request.getAdminId() == null) {
-            request.setAdminId(TenantAccess.principal().getUserId());
-        }
+        request.setAdminId(TenantAccess.principal().getUserId());
         CheckTransactionDto created = checkTransactionService.create(tenantId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -90,6 +88,6 @@ public class CheckTransactionController {
             @PathVariable Long requestId) {
         TenantAccess.requireTenant(tenantId);
         TenantAccess.requireRole(UserRole.ADMIN);
-        return ResponseEntity.ok(checkTransactionService.getByRequestId(requestId));
+        return ResponseEntity.ok(checkTransactionService.getByRequestId(tenantId, requestId));
     }
 }

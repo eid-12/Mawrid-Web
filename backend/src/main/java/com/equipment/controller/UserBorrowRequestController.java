@@ -42,10 +42,17 @@ public class UserBorrowRequestController {
             @PathVariable Long userId,
             @AuthenticationPrincipal AppUserPrincipal principal
     ) {
-        if (!TenantAccess.hasRole(UserRole.ADMIN) && !TenantAccess.hasRole(UserRole.SUPER_ADMIN)) {
-            if (principal == null || !principal.getUserId().equals(userId)) {
-                throw new AccessDeniedException("Access denied");
-            }
+        if (principal == null) {
+            throw new AccessDeniedException("Access denied");
+        }
+        if (TenantAccess.hasRole(UserRole.SUPER_ADMIN)) {
+            return ResponseEntity.ok(borrowRequestService.getByUser(userId));
+        }
+        if (TenantAccess.hasRole(UserRole.ADMIN)) {
+            return ResponseEntity.ok(borrowRequestService.getByUserAndTenant(userId, principal.getTenantId()));
+        }
+        if (!principal.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Access denied");
         }
         return ResponseEntity.ok(borrowRequestService.getByUser(userId));
     }

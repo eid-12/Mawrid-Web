@@ -45,7 +45,7 @@ public class UserController {
                 roleFilter = UserRole.valueOf(r);
             } catch (IllegalArgumentException ignored) {}
         }
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 100)));
         return ResponseEntity.ok(userService.findAllPaginated(roleFilter, q, pageable));
     }
 

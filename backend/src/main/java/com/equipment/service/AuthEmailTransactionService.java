@@ -60,9 +60,11 @@ public class AuthEmailTransactionService {
     @Transactional
     public IssuedEmailOtp issueForgotPasswordOtp(String email) {
         User user = userRepository.findByEmailForUpdate(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElse(null);
+        // Keep the public response identical for unknown or unavailable accounts.
+        if (user == null) return null;
         if (Boolean.TRUE.equals(user.getEmailVerified()) && !Boolean.TRUE.equals(user.getIsActive())) {
-            throw new AccountInactiveException();
+            return null;
         }
         claimEmailSendSlot(user);
         userTokenRepository.deleteByUserIdAndTokenType(user.getId(), AuthService.TOKEN_TYPE_PASSWORD_RESET_OTP);
