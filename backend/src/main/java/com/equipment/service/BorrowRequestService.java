@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -50,7 +51,7 @@ public class BorrowRequestService {
     private final EquipmentRepository equipmentRepository;
     private final ActivityLogService activityLogService;
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BorrowRequestDto createRequest(Long tenantId, CreateBorrowRequestDto dto) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + tenantId));
@@ -99,7 +100,7 @@ public class BorrowRequestService {
     /**
      * User creates a borrow request for equipment. Tenant is derived from the equipment.
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BorrowRequestDto createRequestByUser(Long userId, com.equipment.dto.UserCreateBorrowRequestDto dto) {
         Equipment equipment = equipmentRepository.findByIdForUpdate(dto.getEquipmentId())
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + dto.getEquipmentId()));
@@ -196,7 +197,7 @@ public class BorrowRequestService {
         return toDto(req);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BorrowRequestDto approve(Long tenantId, Long requestId, DecisionRequestDto dto) {
         BorrowRequest req = borrowRequestRepository.findByIdAndTenantIdForUpdate(requestId, tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Borrow request not found: " + requestId));
@@ -256,7 +257,8 @@ public class BorrowRequestService {
         if (available < 1) {
             throw new IllegalArgumentException("No available units for this equipment");
         }
-        long held = borrowRequestRepository.countByEquipmentIdAndStatusIn(equipment.getId(), CAPACITY_HOLDING_STATUSES);
+        long held = borrowRequestRepository.countByEquipmentIdAndStatusIn(
+                equipment.getId(), CAPACITY_HOLDING_STATUSES);
         if (available - held < 1) {
             throw new IllegalArgumentException("All remaining units are already reserved. Please choose another item or date.");
         }
@@ -270,7 +272,8 @@ public class BorrowRequestService {
         if (available < 1) {
             throw new IllegalArgumentException("No available units for this equipment");
         }
-        long approvedHolds = borrowRequestRepository.countByEquipmentIdAndStatusIn(equipment.getId(), List.of("APPROVED"));
+        long approvedHolds = borrowRequestRepository.countByEquipmentIdAndStatusIn(
+                equipment.getId(), List.of("APPROVED"));
         if (available - approvedHolds < 1) {
             throw new IllegalArgumentException("No available units left to approve this request.");
         }
@@ -343,18 +346,13 @@ public class BorrowRequestService {
         if (userId == null || equipmentId == null) return;
 
         boolean hasDuplicateActiveRequest = borrowRequestRepository.existsByUserIdAndEquipmentIdAndStatusIn(
-                userId,
-                equipmentId,
-                DUPLICATE_BLOCKING_STATUSES
-        );
+                userId, equipmentId, DUPLICATE_BLOCKING_STATUSES);
         if (hasDuplicateActiveRequest) {
             throw new IllegalArgumentException("You already have an active request or possession of this item.");
         }
 
         long activeItemsCount = borrowRequestRepository.countByUserIdAndStatusIn(
-                userId,
-                ACTIVE_ITEM_LIMIT_STATUSES
-        );
+                userId, ACTIVE_ITEM_LIMIT_STATUSES);
         if (activeItemsCount >= MAX_ACTIVE_ITEMS_PER_USER) {
             throw new IllegalArgumentException(
                     "You have reached the maximum limit of borrowed items (" + MAX_ACTIVE_ITEMS_PER_USER + " items)."
@@ -362,10 +360,7 @@ public class BorrowRequestService {
         }
 
         boolean hasOverdueItem = borrowRequestRepository.existsByUserIdAndStatusInAndEndDateBefore(
-                userId,
-                OVERDUE_BLOCKING_STATUSES,
-                LocalDate.now()
-        );
+                userId, OVERDUE_BLOCKING_STATUSES, LocalDate.now());
         if (hasOverdueItem) {
             throw new IllegalArgumentException("Please return your overdue items before making new requests.");
         }

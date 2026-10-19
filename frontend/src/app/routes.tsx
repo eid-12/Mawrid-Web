@@ -1,39 +1,40 @@
 import { createBrowserRouter } from "react-router";
+import { lazy } from "react";
 
 // Public pages
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import Verification from "./pages/Verification";
-import NotFound from "./pages/NotFound";
+const Landing = lazy(() => import("./pages/Landing"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Verification = lazy(() => import("./pages/Verification"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 import { RequireAuth } from "./auth/RequireAuth";
 import { GuestOnly } from "./auth/GuestOnly";
 
 // User portal
-import UserLayout from "./layouts/UserLayout";
-import UserDashboard from "./pages/user/UserDashboard";
-import Catalog from "./pages/user/Catalog";
-import ItemDetails from "./pages/user/ItemDetails";
-import MyRequests from "./pages/user/MyRequests";
-import Settings from "./pages/user/Settings";
+const UserLayout = lazy(() => import("./layouts/UserLayout"));
+const UserDashboard = lazy(() => import("./pages/user/UserDashboard"));
+const Catalog = lazy(() => import("./pages/user/Catalog"));
+const ItemDetails = lazy(() => import("./pages/user/ItemDetails"));
+const MyRequests = lazy(() => import("./pages/user/MyRequests"));
+const Settings = lazy(() => import("./pages/user/Settings"));
 
 // Admin portal
-import AdminLayout from "./layouts/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import Inventory from "./pages/admin/Inventory";
-import Requests from "./pages/admin/Requests";
-import Checking from "./pages/admin/Checking";
-import AdminSettings from "./pages/admin/AdminSettings";
+const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const Inventory = lazy(() => import("./pages/admin/Inventory"));
+const Requests = lazy(() => import("./pages/admin/Requests"));
+const Checking = lazy(() => import("./pages/admin/Checking"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 import { RequireActiveAdminCollege } from "./auth/RequireActiveAdminCollege";
 
 // Super admin portal
-import SuperAdminLayout from "./layouts/SuperAdminLayout";
-import GlobalDashboard from "./pages/superadmin/GlobalDashboard";
-import Colleges from "./pages/superadmin/Colleges";
-import UserManagement from "./pages/superadmin/UserManagement";
-import SuperAdminSettings from "./pages/superadmin/SuperAdminSettings";
+const SuperAdminLayout = lazy(() => import("./layouts/SuperAdminLayout"));
+const GlobalDashboard = lazy(() => import("./pages/superadmin/GlobalDashboard"));
+const Colleges = lazy(() => import("./pages/superadmin/Colleges"));
+const UserManagement = lazy(() => import("./pages/superadmin/UserManagement"));
+const SuperAdminSettings = lazy(() => import("./pages/superadmin/SuperAdminSettings"));
 
 export const router = createBrowserRouter([
   {
