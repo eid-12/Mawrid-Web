@@ -44,6 +44,15 @@ class BorrowRequestServiceSecurityTest {
     }
 
     @Test
+    void rejectCannotCrossTenantBoundary() {
+        when(requests.findByIdAndTenantIdForUpdate(55L, 1L)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.reject(1L, 55L, new DecisionRequestDto()));
+        verify(requests, never()).save(any());
+    }
+
+    @Test
     void adminCreateRejectsEquipmentFromAnotherTenant() {
         Tenant otherTenant = Tenant.builder().id(2L).status("ACTIVE").build();
         Equipment foreignEquipment = Equipment.builder().id(9L).tenant(otherTenant).build();
