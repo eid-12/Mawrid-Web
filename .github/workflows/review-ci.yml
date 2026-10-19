@@ -28,7 +28,7 @@ jobs:
 
       - name: Test and package backend
         working-directory: backend
-        run: ./mvnw --batch-mode clean test package
+        run: mvn --batch-mode clean test package
 
   frontend:
     runs-on: ubuntu-latest
