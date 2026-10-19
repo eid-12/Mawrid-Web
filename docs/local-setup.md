@@ -60,6 +60,10 @@ VITE_API_BASE_URL=/api
 From the repository root (needs Docker):
 
 ```bash
+cat > .env <<'EOF'
+APP_JWT_SECRET=dev-only-change-me-at-least-32-characters
+APP_COOKIE_SECURE=false
+EOF
 docker compose up --build
 ```
 
