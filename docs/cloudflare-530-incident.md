@@ -13,16 +13,62 @@ https://developers.cloudflare.com/support/troubleshooting/http-status-codes/clou
 
 The confirmed failure boundary is therefore the tunnel route/connector, not the application response. The remaining root cause inside that boundary requires either Cloudflare Zero Trust access or origin-host access.
 
-## Authorized operator checks
+## Recovery checklist
 
-1. In Cloudflare Zero Trust, open **Networks > Tunnels** and record the tunnel status and connector IDs.
-2. Verify the public hostname route for `mawrid.cloudbase.website` targets the intended tunnel and service.
-3. On the origin, run `systemctl status cloudflared` (or inspect the cloudflared container) and review logs around the first 1033 occurrence.
-4. If stopped, determine why before restarting it. Check host uptime, service exit status, disk pressure, and outbound connectivity to Cloudflare.
-5. From the origin, verify Nginx directly and then the backend:
-   - `curl -fsS http://127.0.0.1:3000/`
-   - `curl -fsS http://127.0.0.1:8080/actuator/health`
-6. Verify running image digests against the intended Docker Hub images before changing containers.
-7. Restart only the failed connector/service, then repeat public HTTPS checks.
+### Cloudflare dashboard access required
+
+1. Open **Zero Trust > Networks > Tunnels** and record the tunnel status, tunnel ID, connector IDs, and last-seen times.
+2. Open the tunnel's **Public Hostnames** configuration and verify that `mawrid.cloudbase.website` targets the intended local Nginx service.
+3. Check the DNS record for the hostname and confirm its tunnel target matches the tunnel inspected above.
+
+### Run on the production host
+
+Capture evidence before restarting anything:
+
+```bash
+sudo systemctl status cloudflared --no-pager -l
+sudo journalctl -u cloudflared --since "24 hours ago" --no-pager
+sudo systemctl show cloudflared -p ActiveState -p SubState -p ExecMainStatus -p FragmentPath
+docker ps -a --no-trunc
+docker compose ps
+docker logs --since 24h cloudflared
+df -h
+uptime
+```
+
+If `cloudflared` runs as a system service, the Docker log command may report that no such container exists; if it runs as a container, the systemd unit may not exist. Use the applicable output rather than restarting both.
+
+Verify the origin independently of Cloudflare:
+
+```bash
+curl -fsS -D- http://127.0.0.1:3000/ -o /dev/null
+curl -fsS http://127.0.0.1:8080/actuator/health
+docker ps -q | xargs -r docker inspect --format '{{.Name}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}} {{.Image}}'
+docker images --digests --no-trunc minipcer/mawrid-frontend minipcer/mawrid-backend
+```
+
+If the connector is confirmed stopped after its logs and exit status are captured, restart only its actual runtime and inspect the new logs:
+
+```bash
+sudo systemctl restart cloudflared
+sudo systemctl status cloudflared --no-pager -l
+sudo journalctl -u cloudflared --since "10 minutes ago" --no-pager
+```
+
+Or, when it is managed by the production Compose project:
+
+```bash
+docker compose restart cloudflared
+docker compose logs --since 10m cloudflared
+```
+
+Finally, from an external machine:
+
+```bash
+curl -fsS -D- https://mawrid.cloudbase.website/ -o /dev/null
+curl -fsS https://mawrid.cloudbase.website/actuator/health
+```
+
+Before changing application containers, compare their image IDs/digests with the intended release commit and registry images.
 
 Do not rotate tunnel credentials, change DNS, or recreate the tunnel until its current status and logs have been captured.
