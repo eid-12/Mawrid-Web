@@ -117,3 +117,18 @@ export const router = createBrowserRouter([
   { path: "*", Component: NotFound },
 ]);
 
+
+// Index the public homepage; keep account and administration screens out of search.
+function updateSearchMetadata(pathname: string) {
+  const publicHome = pathname === '/';
+  let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+  if (!robots) { robots = document.createElement('meta'); robots.name = 'robots'; document.head.append(robots); }
+  robots.content = publicHome ? 'index, follow' : 'noindex, follow';
+  let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (publicHome) {
+    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.append(canonical); }
+    canonical.href = 'https://mawrid.cloudbase.website/';
+  } else { canonical?.remove(); }
+}
+updateSearchMetadata(router.state.location.pathname);
+router.subscribe(state => updateSearchMetadata(state.location.pathname));

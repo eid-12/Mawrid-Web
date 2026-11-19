@@ -74,6 +74,7 @@ export default function Landing() {
             Mawrid streamlines equipment lending and lab resource management for universities. 
             Browse, request, and track equipment with ease.
           </p>
+          <p lang="ar" dir="rtl" className="text-base md:text-xl text-foreground mb-8 leading-relaxed">&#1605;&#1608;&#1585;&#1583; &#1605;&#1606;&#1589;&#1577; &#1604;&#1573;&#1583;&#1575;&#1585;&#1577; &#1573;&#1593;&#1575;&#1585;&#1577; &#1575;&#1604;&#1605;&#1593;&#1583;&#1575;&#1578; &#1575;&#1604;&#1580;&#1575;&#1605;&#1593;&#1610;&#1577; &#1608;&#1581;&#1580;&#1586; &#1575;&#1604;&#1571;&#1580;&#1607;&#1586;&#1577; &#1608;&#1578;&#1578;&#1576;&#1593; &#1578;&#1608;&#1601;&#1585;&#1607;&#1575; &#1576;&#1610;&#1606; &#1575;&#1604;&#1603;&#1604;&#1610;&#1575;&#1578;.</p>
           <div className="flex items-center justify-center gap-3 md:gap-4 flex-wrap">
             <Button icon={ArrowRight} iconPosition="right" size="lg" onClick={() => navigate('/signup')}>
               Join now
