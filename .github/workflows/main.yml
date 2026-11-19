@@ -24,6 +24,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Build frontend image for runtime checks
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: mawrid-frontend:smoke
+          build-args: |
+            VITE_API_BASE_URL=/api
+
+      - name: Check frontend runtime and localized metadata
+        run: bash frontend/scripts/smoke-image.sh mawrid-frontend:smoke
+
       - name: Build and Push Frontend
         uses: docker/build-push-action@v7
         with:

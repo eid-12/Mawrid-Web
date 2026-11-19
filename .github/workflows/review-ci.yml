@@ -1,6 +1,8 @@
 name: Review CI
 
 on:
+  push:
+    branches: ["seo/mawrid-localized"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -66,8 +68,13 @@ jobs:
         with:
           context: ./frontend
           push: false
+          load: true
+          tags: mawrid-frontend:review
           build-args: |
             VITE_API_BASE_URL=/api
+
+      - name: Check frontend runtime and localized metadata
+        run: bash frontend/scripts/smoke-image.sh mawrid-frontend:review
 
       - name: Build backend image without pushing
         uses: docker/build-push-action@v7
